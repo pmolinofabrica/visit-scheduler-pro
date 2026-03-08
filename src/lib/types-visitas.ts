@@ -85,5 +85,6 @@ export interface SeguimientoLlamado {
   fecha_hora: string;
   agente: string | null;
   atendio: boolean | null;
+  observaciones: string | null;
   created_at: string;
 }
