@@ -23,7 +23,8 @@ export function PanelAsignar() {
   const [selectedSolicitudId, setSelectedSolicitudId] = useState<number | null>(null);
   const [selectedPlani, setSelectedPlani] = useState<number | null>(null);
   const [estado, setEstado] = useState<string>('asignado');
-  const [agente, setAgente] = useState('');
+  const [agente, setAgente] = useState('Pablo');
+  const [agenteOtro, setAgenteOtro] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -55,7 +56,7 @@ export function PanelAsignar() {
     try {
       const updateData: Record<string, any> = {
         estado,
-        agente_asigno: agente || null,
+        agente_asigno: (agente === 'Otro' ? agenteOtro : agente) || null,
         observaciones: observaciones || null,
         updated_at: new Date().toISOString(),
       };
@@ -78,8 +79,8 @@ export function PanelAsignar() {
       setSelectedSolicitudId(null);
       setSelectedPlani(null);
       setEstado('asignado');
-      setAgente('');
-      setObservaciones('');
+      setAgente('Pablo');
+      setAgenteOtro('');
     } catch (err: any) {
       toast.error(err.message || 'Error al actualizar');
     } finally {
@@ -200,7 +201,25 @@ export function PanelAsignar() {
 
           <div>
             <Label>Agente que asigna</Label>
-            <Input value={agente} onChange={e => setAgente(e.target.value)} placeholder="Nombre del agente" />
+            <Select value={agente} onValueChange={setAgente}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pablo">Pablo</SelectItem>
+                <SelectItem value="Vanesa">Vanesa</SelectItem>
+                <SelectItem value="Celina">Celina</SelectItem>
+                <SelectItem value="Eugenia">Eugenia</SelectItem>
+                <SelectItem value="Eliana">Eliana</SelectItem>
+                <SelectItem value="Otro">Otro...</SelectItem>
+              </SelectContent>
+            </Select>
+            {agente === 'Otro' && (
+              <Input
+                className="mt-2"
+                value={agenteOtro}
+                onChange={e => setAgenteOtro(e.target.value)}
+                placeholder="Nombre del agente"
+              />
+            )}
           </div>
 
           <div>
