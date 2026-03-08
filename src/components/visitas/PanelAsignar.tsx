@@ -56,7 +56,7 @@ export function PanelAsignar() {
     try {
       const updateData: Record<string, any> = {
         estado,
-        agente_asigno: agente || null,
+        agente_asigno: (agente === 'Otro' ? agenteOtro : agente) || null,
         observaciones: observaciones || null,
         updated_at: new Date().toISOString(),
       };
