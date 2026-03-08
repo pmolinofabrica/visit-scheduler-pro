@@ -78,3 +78,12 @@ export const MES_NOMBRE: Record<number, string> = {
   5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
   9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
 };
+
+export interface SeguimientoLlamado {
+  id_llamado: number;
+  id_asignacion: number;
+  fecha_hora: string;
+  agente: string | null;
+  atendio: boolean | null;
+  created_at: string;
+}

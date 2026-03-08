@@ -3011,6 +3011,41 @@ export type Database = {
           },
         ]
       }
+      seguimiento_llamados_visita: {
+        Row: {
+          agente: string | null
+          atendio: boolean | null
+          created_at: string | null
+          fecha_hora: string | null
+          id_asignacion: number | null
+          id_llamado: number
+        }
+        Insert: {
+          agente?: string | null
+          atendio?: boolean | null
+          created_at?: string | null
+          fecha_hora?: string | null
+          id_asignacion?: number | null
+          id_llamado?: number
+        }
+        Update: {
+          agente?: string | null
+          atendio?: boolean | null
+          created_at?: string | null
+          fecha_hora?: string | null
+          id_asignacion?: number | null
+          id_llamado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seguimiento_llamados_visita_id_asignacion_fkey"
+            columns: ["id_asignacion"]
+            isOneToOne: false
+            referencedRelation: "asignaciones_visita"
+            referencedColumns: ["id_asignacion"]
+          },
+        ]
+      }
       solicitudes: {
         Row: {
           agenda_amplia: string | null
