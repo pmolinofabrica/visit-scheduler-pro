@@ -201,7 +201,25 @@ export function PanelAsignar() {
 
           <div>
             <Label>Agente que asigna</Label>
-            <Input value={agente} onChange={e => setAgente(e.target.value)} placeholder="Nombre del agente" />
+            <Select value={agente} onValueChange={setAgente}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pablo">Pablo</SelectItem>
+                <SelectItem value="Vanesa">Vanesa</SelectItem>
+                <SelectItem value="Celina">Celina</SelectItem>
+                <SelectItem value="Eugenia">Eugenia</SelectItem>
+                <SelectItem value="Eliana">Eliana</SelectItem>
+                <SelectItem value="Otro">Otro...</SelectItem>
+              </SelectContent>
+            </Select>
+            {agente === 'Otro' && (
+              <Input
+                className="mt-2"
+                value={agenteOtro}
+                onChange={e => setAgenteOtro(e.target.value)}
+                placeholder="Nombre del agente"
+              />
+            )}
           </div>
 
           <div>
