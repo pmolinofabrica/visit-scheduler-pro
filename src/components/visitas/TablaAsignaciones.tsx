@@ -26,13 +26,17 @@ export function TablaAsignaciones({ soloConfirmados, estadosFiltrados = [] }: Pr
 
   const filtradas = useMemo(() => {
     let list = asignaciones;
+    if (estadosFiltrados.length > 0 && !soloConfirmados) {
+      list = list.filter(a => estadosFiltrados.includes(a.estado));
+    }
+    
     if (soloConfirmados) {
       list = list.filter(a => a.estado === 'confirmado' || a.estado === 'asignado');
     } else if (filtroEstado !== 'todos') {
       list = list.filter(a => a.estado === filtroEstado);
     }
     return list;
-  }, [asignaciones, soloConfirmados, filtroEstado]);
+  }, [asignaciones, soloConfirmados, filtroEstado, estadosFiltrados]);
 
   const estadoColor: Record<string, string> = {
     asignado: 'bg-badge-assigned text-primary-foreground',
