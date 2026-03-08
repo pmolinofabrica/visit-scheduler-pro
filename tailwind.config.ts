@@ -47,6 +47,28 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        semaforo: {
+          verde: "hsl(var(--semaforo-verde))",
+          "verde-bg": "hsl(var(--semaforo-verde-bg))",
+          amarillo: "hsl(var(--semaforo-amarillo))",
+          "amarillo-bg": "hsl(var(--semaforo-amarillo-bg))",
+          rojo: "hsl(var(--semaforo-rojo))",
+          "rojo-bg": "hsl(var(--semaforo-rojo-bg))",
+        },
+        espera: {
+          DEFAULT: "hsl(var(--espera))",
+          bg: "hsl(var(--espera-bg))",
+        },
+        "panel-header": {
+          DEFAULT: "hsl(var(--panel-header))",
+          foreground: "hsl(var(--panel-header-fg))",
+        },
+        badge: {
+          confirmed: "hsl(var(--badge-confirmed))",
+          assigned: "hsl(var(--badge-assigned))",
+          waiting: "hsl(var(--badge-waiting))",
+          cancelled: "hsl(var(--badge-cancelled))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

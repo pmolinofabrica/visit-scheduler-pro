@@ -53,6 +53,23 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Visit panel tokens */
+    --semaforo-verde: 142 71% 45%;
+    --semaforo-verde-bg: 142 71% 95%;
+    --semaforo-amarillo: 38 92% 50%;
+    --semaforo-amarillo-bg: 38 92% 95%;
+    --semaforo-rojo: 0 84% 60%;
+    --semaforo-rojo-bg: 0 84% 95%;
+    --espera: 210 80% 55%;
+    --espera-bg: 210 80% 95%;
+    --panel-header: 220 25% 18%;
+    --panel-header-fg: 210 40% 98%;
+    --surface-elevated: 0 0% 99%;
+    --badge-confirmed: 160 60% 40%;
+    --badge-assigned: 220 60% 50%;
+    --badge-waiting: 38 80% 50%;
+    --badge-cancelled: 0 60% 50%;
   }
 
   .dark {
