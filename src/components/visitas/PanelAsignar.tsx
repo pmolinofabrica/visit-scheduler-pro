@@ -23,7 +23,8 @@ export function PanelAsignar() {
   const [selectedSolicitudId, setSelectedSolicitudId] = useState<number | null>(null);
   const [selectedPlani, setSelectedPlani] = useState<number | null>(null);
   const [estado, setEstado] = useState<string>('asignado');
-  const [agente, setAgente] = useState('');
+  const [agente, setAgente] = useState('Pablo');
+  const [agenteOtro, setAgenteOtro] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [saving, setSaving] = useState(false);
 
