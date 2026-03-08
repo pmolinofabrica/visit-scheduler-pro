@@ -82,3 +82,38 @@ export function useActualizarEstado() {
     },
   });
 }
+
+export function useSeguimientoLlamados(id_asignacion?: number | null) {
+  return useQuery({
+    queryKey: ['seguimiento-llamados', id_asignacion],
+    queryFn: async () => {
+      if (!id_asignacion) return [];
+      const { data, error } = await supabase
+        .from('seguimiento_llamados_visita' as any)
+        .select('*')
+        .eq('id_asignacion', id_asignacion)
+        .order('fecha_hora', { ascending: true });
+      if (error) throw error;
+      return (data || []) as unknown as SeguimientoLlamado[];
+    },
+    enabled: !!id_asignacion,
+  });
+}
+
+export function useCrearSeguimientoLlamado() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (llamado: Partial<SeguimientoLlamado>) => {
+      const { data, error } = await supabase
+        .from('seguimiento_llamados_visita' as any)
+        .insert(llamado as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['seguimiento-llamados', variables.id_asignacion] });
+    },
+  });
+}
