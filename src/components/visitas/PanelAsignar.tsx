@@ -79,8 +79,8 @@ export function PanelAsignar() {
       setSelectedSolicitudId(null);
       setSelectedPlani(null);
       setEstado('asignado');
-      setAgente('');
-      setObservaciones('');
+      setAgente('Pablo');
+      setAgenteOtro('');
     } catch (err: any) {
       toast.error(err.message || 'Error al actualizar');
     } finally {
