@@ -14,7 +14,7 @@ interface Props {
   onSelectAsignacion?: (id_asignacion: number) => void;
 }
 
-export function CalendarioAnual({ slots, asignaciones, mesSolicitado, selectedSlot, onSelectSlot, onSelectAsignacion }: Props) {
+export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selectedSlot, onSelectSlot, onSelectAsignacion }: Props) {
   const mesesDisponibles = useMemo(() => {
     return [...new Set(slots.map(s => s.mes))].sort((a, b) => a - b);
   }, [slots]);
