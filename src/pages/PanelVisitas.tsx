@@ -1,18 +1,9 @@
-import { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useDisponibilidad } from '@/hooks/useVisitas';
-import { DisponibilidadGrid } from '@/components/visitas/DisponibilidadGrid';
-import { FormAsignacion } from '@/components/visitas/FormAsignacion';
+import { PanelAsignar } from '@/components/visitas/PanelAsignar';
 import { TablaAsignaciones } from '@/components/visitas/TablaAsignaciones';
 import { CalendarDays, ClipboardList, CheckCircle } from 'lucide-react';
 
 export default function PanelVisitas() {
-  const [selectedPlani, setSelectedPlani] = useState<number | null>(null);
-  const { data: slots = [] } = useDisponibilidad(2026);
-
-  const selectedSlot = useMemo(() => {
-    return slots.find(s => s.id_plani === selectedPlani) || null;
-  }, [slots, selectedPlani]);
 
   return (
     <div className="min-h-screen bg-background">
