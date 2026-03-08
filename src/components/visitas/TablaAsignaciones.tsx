@@ -9,9 +9,10 @@ import { useMemo, useState } from 'react';
 
 interface Props {
   soloConfirmados?: boolean;
+  estadosFiltrados?: string[];
 }
 
-export function TablaAsignaciones({ soloConfirmados }: Props) {
+export function TablaAsignaciones({ soloConfirmados, estadosFiltrados = [] }: Props) {
   const { data: asignaciones = [], isLoading } = useAsignaciones();
   const { data: slots = [] } = useDisponibilidad(2026);
   const actualizar = useActualizarEstado();
