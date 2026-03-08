@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { SlotDisponibilidad, AsignacionVisita, Coeficiente } from '@/lib/types-visitas';
+import type { SlotDisponibilidad, AsignacionVisita, Coeficiente, SeguimientoLlamado } from '@/lib/types-visitas';
 
 export function useDisponibilidad(anio?: number) {
   return useQuery({
