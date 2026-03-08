@@ -1,20 +1,26 @@
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PanelAsignar } from '@/components/visitas/PanelAsignar';
 import { TablaAsignaciones } from '@/components/visitas/TablaAsignaciones';
+import { FiltroEstados } from '@/components/visitas/FiltroEstados';
 import { CalendarDays, ClipboardList, CheckCircle } from 'lucide-react';
 
 export default function PanelVisitas() {
+  const [estadosFiltrados, setEstadosFiltrados] = useState<string[]>(['asignado', 'en_espera', 'confirmado']);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-panel-header text-panel-header-foreground">
-        <div className="container flex items-center gap-3 py-4">
-          <CalendarDays className="h-6 w-6" />
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">Panel de Visitas</h1>
-            <p className="text-sm opacity-70">Gestión y asignación de turnos grupales</p>
+        <div className="container flex items-center justify-between gap-3 py-4">
+          <div className="flex items-center gap-3">
+            <CalendarDays className="h-6 w-6" />
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Panel de Visitas</h1>
+              <p className="text-sm opacity-70">Gestión y asignación de turnos grupales</p>
+            </div>
           </div>
+          <FiltroEstados value={estadosFiltrados} onChange={setEstadosFiltrados} />
         </div>
       </header>
 
@@ -37,14 +43,14 @@ export default function PanelVisitas() {
 
           {/* Tab Asignar */}
           <TabsContent value="asignar">
-            <PanelAsignar />
+            <PanelAsignar estadosFiltrados={estadosFiltrados} />
           </TabsContent>
 
           {/* Tab Seguimiento */}
           <TabsContent value="seguimiento">
             <div className="rounded-lg border p-4">
               <h2 className="mb-4 text-lg font-semibold">Todos los turnos — Seguimiento completo</h2>
-              <TablaAsignaciones />
+              <TablaAsignaciones estadosFiltrados={estadosFiltrados} />
             </div>
           </TabsContent>
 
@@ -52,7 +58,7 @@ export default function PanelVisitas() {
           <TabsContent value="confirmados">
             <div className="rounded-lg border p-4">
               <h2 className="mb-4 text-lg font-semibold">Turnos asignados y confirmados</h2>
-              <TablaAsignaciones soloConfirmados />
+              <TablaAsignaciones soloConfirmados estadosFiltrados={estadosFiltrados} />
             </div>
           </TabsContent>
         </Tabs>

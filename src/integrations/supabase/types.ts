@@ -3019,6 +3019,7 @@ export type Database = {
           fecha_hora: string | null
           id_asignacion: number | null
           id_llamado: number
+          observaciones: string | null
         }
         Insert: {
           agente?: string | null
@@ -3027,6 +3028,7 @@ export type Database = {
           fecha_hora?: string | null
           id_asignacion?: number | null
           id_llamado?: number
+          observaciones?: string | null
         }
         Update: {
           agente?: string | null
@@ -3035,6 +3037,7 @@ export type Database = {
           fecha_hora?: string | null
           id_asignacion?: number | null
           id_llamado?: number
+          observaciones?: string | null
         }
         Relationships: [
           {

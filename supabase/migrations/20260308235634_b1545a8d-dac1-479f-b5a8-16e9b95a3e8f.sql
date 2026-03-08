@@ -1,0 +1,1 @@
+ALTER TABLE public.seguimiento_llamados_visita ADD COLUMN IF NOT EXISTS observaciones TEXT;

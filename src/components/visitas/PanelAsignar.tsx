@@ -16,7 +16,11 @@ import { CalendarDays, Users, Send } from 'lucide-react';
 import { DetalleAsignacion } from './DetalleAsignacion';
 import { FormEdicionAsignacion } from './FormEdicionAsignacion';
 
-export function PanelAsignar() {
+interface Props {
+  estadosFiltrados?: string[];
+}
+
+export function PanelAsignar({ estadosFiltrados = [] }: Props) {
   const { data: asignaciones = [], isLoading: loadingAsig } = useAsignaciones();
   const { data: slots = [] } = useDisponibilidad(2026);
   const qc = useQueryClient();
@@ -170,7 +174,7 @@ export function PanelAsignar() {
         <div className="rounded-xl border shadow-sm p-4 max-h-[75vh] overflow-y-auto bg-card">
           <CalendarioAnual
             slots={slots}
-            asignaciones={asignaciones}
+            asignaciones={estadosFiltrados.length > 0 ? asignaciones.filter(a => a.estado === 'pendiente' || estadosFiltrados.includes(a.estado)) : asignaciones}
             mesSolicitado={solicitudSeleccionada?.mes_solicitado || undefined}
             selectedSlot={selectedPlani}
             onSelectSlot={setSelectedPlani}
