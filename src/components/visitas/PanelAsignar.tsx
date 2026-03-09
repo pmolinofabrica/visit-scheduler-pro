@@ -124,24 +124,40 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
       if (error) throw error;
 
       if (duplicar) {
+        // Remove id so DB generates a new one
+        const { id_asignacion, created_at, updated_at, ...rest } = solicitudSeleccionada;
         const insertData = {
-          ...updateData,
-          id_visita: solicitudSeleccionada.id_visita,
+          ...rest,
+          ...formData,
+          estado: 'pendiente',
           id_plani: null,
           agente_asigno: (agente === 'Otro' ? agenteOtro : agente) || null,
         };
-        const { error: errorInsert } = await supabase
+        delete (insertData as any).planificacion;
+        const { data: newRow, error: errorInsert } = await supabase
           .from('asignaciones_visita' as any)
-          .insert([insertData as any]);
+          .insert([insertData as any])
+          .select()
+          .single();
         
         if (errorInsert) throw errorInsert;
-        toast.success('Solicitud modificada y duplicada correctamente');
+        
+        await qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+        
+        // Load the new duplicated record for immediate editing
+        if (newRow) {
+          setSelectedSolicitudId((newRow as any).id_asignacion);
+          setEstado('modificar');
+          toast.success('Solicitud duplicada — editá los datos del nuevo turno');
+        } else {
+          toast.success('Solicitud modificada y duplicada correctamente');
+          setEstado('asignado');
+        }
       } else {
         toast.success('Solicitud modificada correctamente');
+        qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+        setEstado('asignado');
       }
-
-      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
-      setEstado('asignado'); // reset state
     } catch (e: any) {
       toast.error(e.message || 'Error al guardar modificación');
     } finally {

@@ -45,7 +45,7 @@ export function TablaAsignaciones({ soloConfirmados, estadosFiltrados = [] }: Pr
     cancelado: 'bg-badge-cancelled text-primary-foreground',
     pendiente: 'bg-muted text-muted-foreground',
     duplicado: 'bg-muted text-muted-foreground',
-    corregido: 'bg-muted text-muted-foreground',
+    modificar: 'bg-accent text-accent-foreground',
   };
 
   const handleCambioEstado = async (id: number, estado: string) => {
@@ -126,7 +126,7 @@ export function TablaAsignaciones({ soloConfirmados, estadosFiltrados = [] }: Pr
                           <SelectValue placeholder="Cambiar" />
                         </SelectTrigger>
                         <SelectContent>
-                          {['asignado', 'en_espera', 'confirmado', 'cancelado', 'duplicado', 'corregido']
+                          {['asignado', 'en_espera', 'confirmado', 'cancelado', 'duplicado']
                             .filter(e => e !== a.estado)
                             .map(e => (
                               <SelectItem key={e} value={e}>{ESTADO_LABELS[e]}</SelectItem>
