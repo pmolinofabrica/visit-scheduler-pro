@@ -126,7 +126,7 @@ export function TablaAsignaciones({ soloConfirmados, estadosFiltrados = [] }: Pr
                           <SelectValue placeholder="Cambiar" />
                         </SelectTrigger>
                         <SelectContent>
-                          {['asignado', 'en_espera', 'confirmado', 'cancelado', 'duplicado', 'corregido']
+                          {['asignado', 'en_espera', 'confirmado', 'cancelado', 'duplicado']
                             .filter(e => e !== a.estado)
                             .map(e => (
                               <SelectItem key={e} value={e}>{ESTADO_LABELS[e]}</SelectItem>
