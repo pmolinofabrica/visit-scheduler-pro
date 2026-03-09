@@ -69,6 +69,14 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
     return name.length > max ? name.slice(0, max) + '…' : name;
   };
 
+  const add15Mins = (timeStr?: string) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h, m + 15);
+    return date.toTimeString().slice(0, 5);
+  };
+
   return (
     <div className="space-y-4">
       {/* Month tabs */}

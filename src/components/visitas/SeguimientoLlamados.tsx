@@ -21,7 +21,7 @@ export function SeguimientoLlamados({ idAsignacion }: Props) {
   const [agente, setAgente] = useState('Pablo');
   const [atendio, setAtendio] = useState(false);
   const [observacionesLlamado, setObservacionesLlamado] = useState('');
-  const [fechaLlamado, setFechaLlamado] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [diaMes, setDiaMes] = useState(format(new Date(), 'dd/MM'));
 
   const handleAdd = async (e: React.MouseEvent) => {
     e.stopPropagation();
