@@ -62,6 +62,7 @@ export const ESTADO_LABELS: Record<string, string> = {
   cancelado: 'Cancelado',
   duplicado: 'Duplicado',
   corregido: 'Corregido',
+  modificar: 'Modificar',
 };
 
 export const DIA_SEMANA: Record<number, string> = {
