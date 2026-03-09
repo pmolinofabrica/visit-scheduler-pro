@@ -231,8 +231,8 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
 
       {/* Right: Action panel */}
       <div className="lg:col-span-4">
-        <div className="sticky top-6 space-y-5 rounded-xl border bg-card shadow-sm p-5">
-          <h2 className="text-lg font-semibold flex items-center gap-2 pb-2 border-b">
+        <div className="sticky top-6 space-y-5 rounded-xl border bg-card shadow-elevated p-5">
+          <h2 className="text-base font-bold flex items-center gap-2 pb-3 border-b tracking-tight">
             <Send className="h-5 w-5 text-primary" />
             {viewingAsignacionId ? 'Detalle de Asignación' : 'Panel de Acción'}
           </h2>
