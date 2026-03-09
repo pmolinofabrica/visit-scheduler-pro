@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Phone, PhoneOff, Mail, MailCheck, FileText, History, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -140,6 +140,7 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
   const { data: historial = [] } = useHistorial(asignacion.id_asignacion);
   const { data: correos = [] } = useCorreos(asignacion.id_asignacion);
   const crearLlamado = useCrearSeguimientoLlamado();
+  const qc = useQueryClient();
   
   const [newObs, setNewObs] = useState('');
   const [newAtendio, setNewAtendio] = useState(false);
@@ -194,6 +195,7 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
       setShowEmailForm(false);
       setEmailAsunto('');
       setEmailCuerpo('');
+      qc.invalidateQueries({ queryKey: ['correos-visita', asignacion.id_asignacion] });
     } catch (e: any) {
       toast.error(e.message || 'Error al guardar correo');
     } finally {
@@ -201,9 +203,23 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
     }
   };
 
+  const handleMarcarEnviado = async (idCorreo: number) => {
+    try {
+      const { error } = await supabase
+        .from('correos_visita' as any)
+        .update({ estado_envio: 'enviado', fecha_envio: new Date().toISOString() } as any)
+        .eq('id_correo', idCorreo);
+      if (error) throw error;
+      toast.success('Correo marcado como enviado');
+      qc.invalidateQueries({ queryKey: ['correos-visita', asignacion.id_asignacion] });
+    } catch (e: any) {
+      toast.error(e.message || 'Error al actualizar correo');
+    }
+  };
+
   // Merge all events into a timeline
   const timeline = useMemo(() => {
-    const events: { date: string; type: string; icon: React.ReactNode; text: string; detail?: string }[] = [];
+    const events: { date: string; type: string; icon: React.ReactNode; text: string; detail?: string; correoId?: number }[] = [];
     
     llamados.forEach(l => {
       events.push({
@@ -233,6 +249,7 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
         icon: enviado ? <MailCheck className="h-3.5 w-3.5 text-semaforo-verde" /> : <Mail className="h-3.5 w-3.5 text-muted-foreground" />,
         text: `Correo ${c.tipo_correo === 'asignacion' ? 'de asignación' : 'de confirmación'} — ${enviado ? 'Enviado' : 'Borrador'}`,
         detail: c.asunto || undefined,
+        correoId: !enviado ? c.id_correo : undefined,
       });
     });
 
@@ -248,12 +265,22 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Historial de acciones</h4>
           <div className="space-y-1.5 max-h-60 overflow-y-auto">
             {timeline.map((ev, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs py-1 border-b border-border/30 last:border-0">
+              <div key={i} className="flex items-start gap-2 text-xs py-1.5 border-b border-border/30 last:border-0">
                 <span className="mt-0.5 shrink-0">{ev.icon}</span>
                 <div className="flex-1 min-w-0">
                   <span className="font-medium">{ev.text}</span>
                   {ev.detail && <p className="text-muted-foreground truncate">{ev.detail}</p>}
                 </div>
+                {ev.correoId && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 text-[10px] px-2 shrink-0"
+                    onClick={() => handleMarcarEnviado(ev.correoId!)}
+                  >
+                    <Send className="h-3 w-3 mr-1" /> Enviado
+                  </Button>
+                )}
                 <span className="text-muted-foreground shrink-0">
                   {ev.date ? format(new Date(ev.date), 'dd/MM HH:mm') : '—'}
                 </span>
