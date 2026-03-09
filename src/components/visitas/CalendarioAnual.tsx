@@ -10,11 +10,12 @@ interface Props {
   asignaciones: AsignacionVisita[];
   mesSolicitado?: number;
   selectedSlot?: number | null;
+  cupoRequerido?: number;
   onSelectSlot: (id_plani: number) => void;
   onSelectAsignacion?: (id_asignacion: number) => void;
 }
 
-export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selectedSlot, onSelectSlot, onSelectAsignacion }: Props) {
+export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selectedSlot, cupoRequerido = 0, onSelectSlot, onSelectAsignacion }: Props) {
   const mesesDisponibles = useMemo(() => {
     return [...new Set(slots.map(s => s.mes))].sort((a, b) => a - b);
   }, [slots]);
