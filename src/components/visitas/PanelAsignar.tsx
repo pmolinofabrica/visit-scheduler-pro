@@ -179,14 +179,16 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
   return (
     <div className="grid gap-6 lg:grid-cols-12">
       {/* Left: Solicitudes list */}
-      <div className="lg:col-span-3 space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          Solicitudes pendientes
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {asignaciones.filter(a => a.estado === 'pendiente').length} solicitudes por asignar
-        </p>
+      <div className="lg:col-span-3 space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-base font-bold flex items-center gap-2 tracking-tight">
+            <Users className="h-5 w-5 text-primary" />
+            Solicitudes pendientes
+          </h2>
+          <p className="text-xs text-muted-foreground font-medium">
+            {asignaciones.filter(a => a.estado === 'pendiente').length} por asignar
+          </p>
+        </div>
         <ListaSolicitudes
           solicitudes={asignaciones}
           selectedId={selectedSolicitudId}
@@ -195,26 +197,26 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
       </div>
 
       {/* Center: Calendar */}
-      <div className="lg:col-span-5 space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+      <div className="lg:col-span-5 space-y-4">
+        <h2 className="text-base font-bold flex items-center gap-2 tracking-tight">
           <CalendarDays className="h-5 w-5 text-primary" />
-          Calendario de disponibilidad
+          Disponibilidad
         </h2>
-        <div className="flex flex-wrap gap-4 text-xs bg-muted/40 p-2 rounded-lg border">
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-semaforo-verde shadow-sm" /> Disponible
+        <div className="flex flex-wrap gap-3 text-xs bg-card p-2.5 rounded-lg border shadow-soft">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-semaforo-verde" /> Disponible
           </span>
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-semaforo-amarillo shadow-sm" /> Ajustado
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-semaforo-amarillo" /> Ajustado
           </span>
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-semaforo-rojo shadow-sm" /> Sin cupo
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-semaforo-rojo" /> Sin cupo
           </span>
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-espera shadow-sm" /> En espera
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-espera" /> En espera
           </span>
         </div>
-        <div className="rounded-xl border shadow-sm p-4 max-h-[75vh] overflow-y-auto bg-card">
+        <div className="rounded-xl border bg-card shadow-soft p-4 max-h-[75vh] overflow-y-auto">
           <CalendarioAnual
             slots={slots}
             asignaciones={estadosFiltrados.length > 0 ? asignaciones.filter(a => a.estado === 'pendiente' || estadosFiltrados.includes(a.estado)) : asignaciones}
