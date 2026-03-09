@@ -186,6 +186,7 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
             asignaciones={estadosFiltrados.length > 0 ? asignaciones.filter(a => a.estado === 'pendiente' || estadosFiltrados.includes(a.estado)) : asignaciones}
             mesSolicitado={solicitudSeleccionada?.mes_solicitado || undefined}
             selectedSlot={selectedPlani}
+            cupoRequerido={solicitudSeleccionada?.cupo_calculado || 0}
             onSelectSlot={setSelectedPlani}
             onSelectAsignacion={handleSelectAsignacionFromCalendar}
           />

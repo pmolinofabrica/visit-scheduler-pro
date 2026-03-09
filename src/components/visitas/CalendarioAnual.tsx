@@ -205,6 +205,11 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                                 {Math.round(slot.cupo_en_espera)} espera
                               </span>
                             )}
+                            {slot.residentes_convocados ? (
+                              <span className="ml-auto flex items-center justify-center rounded bg-secondary px-1.5 text-[10px] font-medium text-secondary-foreground" title="Residentes convocados">
+                                👥 {slot.residentes_convocados}
+                              </span>
+                            ) : null}
                           </div>
                         </button>
 
