@@ -106,14 +106,13 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
     }
   };
 
-  const handleGuardarCorreccion = async (formData: Partial<AsignacionVisita>) => {
+  const handleGuardarModificacion = async (formData: Partial<AsignacionVisita>, duplicar: boolean) => {
     if (!solicitudSeleccionada) return;
     setSaving(true);
     try {
       const updateData = {
         ...formData,
-        estado: 'corregido',
-        agente_asigno: (agente === 'Otro' ? agenteOtro : agente) || null,
+        estado: 'pendiente', // Modificado keeps it pending or whatever is requested, let's say "pendiente" so it can be assigned
         updated_at: new Date().toISOString(),
       };
       
@@ -123,11 +122,28 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
         .eq('id_asignacion', solicitudSeleccionada.id_asignacion);
 
       if (error) throw error;
-      toast.success('Solicitud corregida y guardada correctamente');
+
+      if (duplicar) {
+        const insertData = {
+          ...updateData,
+          id_visita: solicitudSeleccionada.id_visita,
+          id_plani: null,
+          agente_asigno: (agente === 'Otro' ? agenteOtro : agente) || null,
+        };
+        const { error: errorInsert } = await supabase
+          .from('asignaciones_visita' as any)
+          .insert([insertData as any]);
+        
+        if (errorInsert) throw errorInsert;
+        toast.success('Solicitud modificada y duplicada correctamente');
+      } else {
+        toast.success('Solicitud modificada correctamente');
+      }
+
       qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
-      setEstado('pendiente'); // reset state to choose action again
+      setEstado('asignado'); // reset state
     } catch (e: any) {
-      toast.error(e.message || 'Error al guardar corrección');
+      toast.error(e.message || 'Error al guardar modificación');
     } finally {
       setSaving(false);
     }
