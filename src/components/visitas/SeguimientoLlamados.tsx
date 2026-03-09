@@ -21,7 +21,7 @@ export function SeguimientoLlamados({ idAsignacion }: Props) {
   const [agente, setAgente] = useState('Pablo');
   const [atendio, setAtendio] = useState(false);
   const [observacionesLlamado, setObservacionesLlamado] = useState('');
-  const [fechaLlamado, setFechaLlamado] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [diaMes, setDiaMes] = useState(format(new Date(), 'dd/MM'));
 
   const handleAdd = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -34,17 +34,28 @@ export function SeguimientoLlamados({ idAsignacion }: Props) {
       return;
     }
     try {
-      const fechaHora = new Date(`${fechaLlamado}T${format(new Date(), 'HH:mm:ss')}`).toISOString();
+      const parts = diaMes.split('/');
+      if (parts.length !== 2) throw new Error('Formato de fecha inválido. Usá DD/MM');
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(d) || isNaN(m) || d < 1 || d > 31 || m < 1 || m > 12) {
+        throw new Error('Fecha inválida. Usá DD/MM');
+      }
+      
+      const year = new Date().getFullYear();
+      const timeStr = format(new Date(), 'HH:mm:ss');
+      const dateObj = new Date(`${year}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}T${timeStr}`);
+
       await crearLlamado({
         id_asignacion: idAsignacion,
         agente,
         atendio,
         observaciones: observacionesLlamado || null,
-        fecha_hora: fechaHora,
+        fecha_hora: dateObj.toISOString(),
       });
       setAtendio(false);
       setObservacionesLlamado('');
-      setFechaLlamado(format(new Date(), 'yyyy-MM-dd'));
+      setDiaMes(format(new Date(), 'dd/MM'));
       toast.success('Llamado registrado');
     } catch (err: any) {
       toast.error(err.message || 'Error al registrar llamado');
@@ -99,10 +110,11 @@ export function SeguimientoLlamados({ idAsignacion }: Props) {
 
           <div className="flex items-center gap-2">
             <Input
-              type="date"
-              className="h-7 text-xs px-2 bg-background/50 w-[130px]"
-              value={fechaLlamado}
-              onChange={e => setFechaLlamado(e.target.value)}
+              type="text"
+              placeholder="DD/MM"
+              className="h-7 text-xs px-2 bg-background/50 w-[70px] text-center"
+              value={diaMes}
+              onChange={e => setDiaMes(e.target.value)}
             />
             <div className="flex items-center gap-1.5 shrink-0 bg-background/50 border rounded-md px-2 h-7">
               <Checkbox id={`atendio-${idAsignacion}`} checked={atendio} onCheckedChange={(c) => setAtendio(!!c)} />

@@ -69,6 +69,14 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
     return name.length > max ? name.slice(0, max) + '…' : name;
   };
 
+  const add15Mins = (timeStr?: string) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h, m + 15);
+    return date.toTimeString().slice(0, 5);
+  };
+
   return (
     <div className="space-y-4">
       {/* Month tabs */}
@@ -148,7 +156,7 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                             <span className={cn('h-3 w-3 rounded-full', getSemaforoColor(slot.semaforo))} />
                           </div>
                           <div className="text-xs mt-1 opacity-80">
-                            {slot.hora_inicio?.slice(0, 5)} - {slot.hora_fin?.slice(0, 5)}
+                            {add15Mins(slot.hora_inicio)} - {add15Mins(slot.hora_fin)}
                           </div>
                           <div className="flex items-center gap-2 mt-1.5 text-xs">
                             <span className="font-bold">{Math.round(slot.cupo_disponible)} disp.</span>

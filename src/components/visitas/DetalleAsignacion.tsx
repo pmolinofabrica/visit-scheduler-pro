@@ -14,6 +14,14 @@ interface Props {
 }
 
 export function DetalleAsignacion({ asignacion: a, slot, onClose, hideClose = false }: Props) {
+  const add15Mins = (timeStr?: string) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h, m + 15);
+    return date.toTimeString().slice(0, 5);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -108,7 +116,7 @@ export function DetalleAsignacion({ asignacion: a, slot, onClose, hideClose = fa
             <p className="font-bold text-primary text-sm">
               {DIA_SEMANA[slot.numero_dia_semana]} {new Date(slot.fecha + 'T12:00:00').getDate()}/{MES_NOMBRE[slot.mes]}
             </p>
-            <p className="text-foreground font-medium">{slot.tipo_turno} ({slot.hora_inicio?.slice(0, 5)} - {slot.hora_fin?.slice(0, 5)})</p>
+            <p className="text-foreground font-medium">{slot.tipo_turno} ({add15Mins(slot.hora_inicio)} - {add15Mins(slot.hora_fin)})</p>
           </div>
         </>
       )}
