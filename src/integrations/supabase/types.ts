@@ -4029,6 +4029,7 @@ export type Database = {
           id_turno: number | null
           mes: number | null
           numero_dia_semana: number | null
+          residentes_convocados: number | null
           semaforo: string | null
           tipo_turno: string | null
         }
