@@ -375,7 +375,7 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                               <SelectItem value="confirmado">✔ Confirmado</SelectItem>
                               <SelectItem value="cancelado">❌ Cancelado</SelectItem>
                               <SelectItem value="duplicado">🔁 Duplicado</SelectItem>
-                              <SelectItem value="corregido">✏️ Corregir datos</SelectItem>
+                              <SelectItem value="modificar">✏️ Modificar datos</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
