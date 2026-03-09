@@ -332,12 +332,14 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                     onClose={() => {}} 
                   />
                   
-                  {estado === 'corregido' ? (
+                  {estado === 'modificar' ? (
                     <div className="pt-2 animate-in fade-in slide-in-from-top-2">
-                      <FormEdicionAsignacion 
+                      <FormModificacion 
                         asignacion={solicitudSeleccionada}
-                        onSave={handleGuardarCorreccion}
+                        onSave={(data) => handleGuardarModificacion(data, false)}
+                        onSaveAndDuplicate={(data) => handleGuardarModificacion(data, true)}
                         onCancel={() => setEstado('asignado')}
+                        saving={saving}
                       />
                     </div>
                   ) : (
