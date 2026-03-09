@@ -140,6 +140,7 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
   const { data: historial = [] } = useHistorial(asignacion.id_asignacion);
   const { data: correos = [] } = useCorreos(asignacion.id_asignacion);
   const crearLlamado = useCrearSeguimientoLlamado();
+  const qc = useQueryClient();
   
   const [newObs, setNewObs] = useState('');
   const [newAtendio, setNewAtendio] = useState(false);
@@ -194,10 +195,25 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
       setShowEmailForm(false);
       setEmailAsunto('');
       setEmailCuerpo('');
+      qc.invalidateQueries({ queryKey: ['correos-visita', asignacion.id_asignacion] });
     } catch (e: any) {
       toast.error(e.message || 'Error al guardar correo');
     } finally {
       setSavingEmail(false);
+    }
+  };
+
+  const handleMarcarEnviado = async (idCorreo: number) => {
+    try {
+      const { error } = await supabase
+        .from('correos_visita' as any)
+        .update({ estado_envio: 'enviado', fecha_envio: new Date().toISOString() } as any)
+        .eq('id_correo', idCorreo);
+      if (error) throw error;
+      toast.success('Correo marcado como enviado');
+      qc.invalidateQueries({ queryKey: ['correos-visita', asignacion.id_asignacion] });
+    } catch (e: any) {
+      toast.error(e.message || 'Error al actualizar correo');
     }
   };
 
