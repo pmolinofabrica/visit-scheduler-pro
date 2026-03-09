@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PanelAsignar } from '@/components/visitas/PanelAsignar';
-import { TablaAsignaciones } from '@/components/visitas/TablaAsignaciones';
+import { TablaSeguimiento } from '@/components/visitas/TablaSeguimiento';
+import { TablaConfirmados } from '@/components/visitas/TablaConfirmados';
 import { FiltroEstados } from '@/components/visitas/FiltroEstados';
 import { CalendarDays, ClipboardList, CheckCircle } from 'lucide-react';
 
@@ -41,24 +42,21 @@ export default function PanelVisitas() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab Asignar */}
           <TabsContent value="asignar">
             <PanelAsignar estadosFiltrados={estadosFiltrados} />
           </TabsContent>
 
-          {/* Tab Seguimiento */}
           <TabsContent value="seguimiento">
             <div className="rounded-lg border p-4">
-              <h2 className="mb-4 text-lg font-semibold">Todos los turnos — Seguimiento completo</h2>
-              <TablaAsignaciones estadosFiltrados={estadosFiltrados} />
+              <h2 className="mb-4 text-lg font-semibold">Seguimiento de turnos</h2>
+              <TablaSeguimiento estadosFiltrados={estadosFiltrados} />
             </div>
           </TabsContent>
 
-          {/* Tab Confirmados */}
           <TabsContent value="confirmados">
             <div className="rounded-lg border p-4">
               <h2 className="mb-4 text-lg font-semibold">Turnos asignados y confirmados</h2>
-              <TablaAsignaciones soloConfirmados estadosFiltrados={estadosFiltrados} />
+              <TablaConfirmados />
             </div>
           </TabsContent>
         </Tabs>
