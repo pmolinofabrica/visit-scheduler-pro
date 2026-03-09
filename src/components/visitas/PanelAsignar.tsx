@@ -131,6 +131,15 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
     }
   };
 
+  const formatTime = (inicio?: string, fin?: string) => {
+    if (!inicio || !fin) return '';
+    const [hi, mi] = inicio.split(':').map(Number);
+    const [hf, mf] = fin.split(':').map(Number);
+    const dInicio = new Date(); dInicio.setHours(hi, mi + 15);
+    const dFin = new Date(); dFin.setHours(hf, mf - 15);
+    return `${dInicio.toTimeString().slice(0, 5)} - ${dFin.toTimeString().slice(0, 5)}`;
+  };
+
   if (loadingAsig) return <p className="text-muted-foreground p-4">Cargando solicitudes...</p>;
 
   return (
