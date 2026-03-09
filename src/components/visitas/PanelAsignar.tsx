@@ -209,7 +209,7 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
               <DetalleAsignacion
                 asignacion={asignacionViewing}
                 slot={asignacionViewing.id_plani ? slots.find(s => s.id_plani === asignacionViewing.id_plani) : undefined}
-                onClose={() => setViewingAsignacionId(null)}
+                onClose={() => { setViewingAsignacionId(null); setEstado('asignado'); }}
               />
               
               {/* Form to update the state of the viewed assignment */}
