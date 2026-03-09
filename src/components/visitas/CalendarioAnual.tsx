@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { SlotDisponibilidad, AsignacionVisita } from '@/lib/types-visitas';
-import { MES_NOMBRE, DIA_SEMANA } from '@/lib/types-visitas';
+import { MES_NOMBRE, DIA_SEMANA, ESTADO_LABELS } from '@/lib/types-visitas';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, School } from 'lucide-react';
