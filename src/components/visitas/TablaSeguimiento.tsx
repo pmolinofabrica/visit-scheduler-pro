@@ -265,12 +265,22 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Historial de acciones</h4>
           <div className="space-y-1.5 max-h-60 overflow-y-auto">
             {timeline.map((ev, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs py-1 border-b border-border/30 last:border-0">
+              <div key={i} className="flex items-start gap-2 text-xs py-1.5 border-b border-border/30 last:border-0">
                 <span className="mt-0.5 shrink-0">{ev.icon}</span>
                 <div className="flex-1 min-w-0">
                   <span className="font-medium">{ev.text}</span>
                   {ev.detail && <p className="text-muted-foreground truncate">{ev.detail}</p>}
                 </div>
+                {ev.correoId && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 text-[10px] px-2 shrink-0"
+                    onClick={() => handleMarcarEnviado(ev.correoId!)}
+                  >
+                    <Send className="h-3 w-3 mr-1" /> Enviado
+                  </Button>
+                )}
                 <span className="text-muted-foreground shrink-0">
                   {ev.date ? format(new Date(ev.date), 'dd/MM HH:mm') : '—'}
                 </span>
