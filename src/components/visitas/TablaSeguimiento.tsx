@@ -219,7 +219,7 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
 
   // Merge all events into a timeline
   const timeline = useMemo(() => {
-    const events: { date: string; type: string; icon: React.ReactNode; text: string; detail?: string }[] = [];
+    const events: { date: string; type: string; icon: React.ReactNode; text: string; detail?: string; correoId?: number }[] = [];
     
     llamados.forEach(l => {
       events.push({
