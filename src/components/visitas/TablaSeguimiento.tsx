@@ -249,6 +249,7 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
         icon: enviado ? <MailCheck className="h-3.5 w-3.5 text-semaforo-verde" /> : <Mail className="h-3.5 w-3.5 text-muted-foreground" />,
         text: `Correo ${c.tipo_correo === 'asignacion' ? 'de asignación' : 'de confirmación'} — ${enviado ? 'Enviado' : 'Borrador'}`,
         detail: c.asunto || undefined,
+        correoId: !enviado ? c.id_correo : undefined,
       });
     });
 
