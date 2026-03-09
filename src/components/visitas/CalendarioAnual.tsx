@@ -216,28 +216,49 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                         {/* Assigned schools for this slot */}
                         {asignados.length > 0 && (
                           <div className="space-y-0.5 pl-1">
-                            {asignados.map(a => (
-                              <button
-                                key={a.id_asignacion}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onSelectAsignacion?.(a.id_asignacion);
-                                }}
-                                className="w-full text-left rounded border border-border/50 bg-card px-2 py-1 text-[11px] hover:bg-accent transition-colors"
-                              >
-                                <div className="flex items-center gap-1">
-                                  <School className="h-3 w-3 shrink-0 text-muted-foreground" />
-                                  <span className="font-medium truncate">{truncateName(a.nombre_institucion)}</span>
-                                </div>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-foreground">{a.cantidad_personas_original}p</span>
-                                  <span className="text-primary font-mono font-bold">{Math.round(a.cupo_calculado)}c</span>
-                                  {a.rango_etario && (
-                                    <span className="text-muted-foreground truncate">{a.rango_etario}</span>
+                            {asignados.map(a => {
+                              const estadoStyles: Record<string, string> = {
+                                asignado: 'border-l-badge-assigned bg-badge-assigned/10',
+                                confirmado: 'border-l-badge-confirmed bg-badge-confirmed/10',
+                                en_espera: 'border-l-badge-waiting bg-badge-waiting/10',
+                                cancelado: 'border-l-badge-cancelled bg-badge-cancelled/10 opacity-60',
+                              };
+                              const style = estadoStyles[a.estado] || '';
+                              return (
+                                <button
+                                  key={a.id_asignacion}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectAsignacion?.(a.id_asignacion);
+                                  }}
+                                  className={cn(
+                                    'w-full text-left rounded border border-border/50 border-l-[3px] px-2 py-1 text-[11px] hover:brightness-95 transition-all',
+                                    style
                                   )}
-                                </div>
-                              </button>
-                            ))}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    <School className="h-3 w-3 shrink-0 text-muted-foreground" />
+                                    <span className="font-medium truncate">{truncateName(a.nombre_institucion)}</span>
+                                    <span className={cn(
+                                      'ml-auto text-[9px] font-bold uppercase px-1 rounded',
+                                      a.estado === 'asignado' && 'text-badge-assigned',
+                                      a.estado === 'confirmado' && 'text-badge-confirmed',
+                                      a.estado === 'en_espera' && 'text-badge-waiting',
+                                      a.estado === 'cancelado' && 'text-badge-cancelled',
+                                    )}>
+                                      {ESTADO_LABELS[a.estado]}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-foreground">{a.cantidad_personas_original}p</span>
+                                    <span className="text-primary font-mono font-bold">{Math.round(a.cupo_calculado)}c</span>
+                                    {a.rango_etario && (
+                                      <span className="text-muted-foreground truncate">{a.rango_etario}</span>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
