@@ -203,11 +203,106 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
 
           {/* Viewing an existing assignment from calendar */}
           {asignacionViewing ? (
-            <DetalleAsignacion
-              asignacion={asignacionViewing}
-              slot={asignacionViewing.id_plani ? slots.find(s => s.id_plani === asignacionViewing.id_plani) : undefined}
-              onClose={() => setViewingAsignacionId(null)}
-            />
+            <div className="space-y-4">
+              <DetalleAsignacion
+                asignacion={asignacionViewing}
+                slot={asignacionViewing.id_plani ? slots.find(s => s.id_plani === asignacionViewing.id_plani) : undefined}
+                onClose={() => setViewingAsignacionId(null)}
+              />
+              
+              {/* Form to update the state of the viewed assignment */}
+              <div className="pt-4 border-t space-y-4 animate-in fade-in slide-in-from-top-2">
+                <h3 className="font-semibold text-sm">Actualizar estado</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Nuevo estado</Label>
+                    <Select value={estado} onValueChange={setEstado}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="asignado">✅ Asignado</SelectItem>
+                        <SelectItem value="en_espera">⏳ En espera</SelectItem>
+                        <SelectItem value="confirmado">✔ Confirmado</SelectItem>
+                        <SelectItem value="cancelado">❌ Cancelado</SelectItem>
+                        <SelectItem value="duplicado">🔁 Duplicado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Agente responsable</Label>
+                    <Select value={agente} onValueChange={setAgente}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pablo">Pablo</SelectItem>
+                        <SelectItem value="Vanesa">Vanesa</SelectItem>
+                        <SelectItem value="Celina">Celina</SelectItem>
+                        <SelectItem value="Eugenia">Eugenia</SelectItem>
+                        <SelectItem value="Eliana">Eliana</SelectItem>
+                        <SelectItem value="Otro">Otro...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {agente === 'Otro' && (
+                      <Input
+                        className="mt-2 h-8 text-sm"
+                        value={agenteOtro}
+                        onChange={e => setAgenteOtro(e.target.value)}
+                        placeholder="Nombre..."
+                      />
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Observaciones de actualización</Label>
+                  <Textarea 
+                    value={observaciones} 
+                    onChange={e => setObservaciones(e.target.value)} 
+                    rows={2}
+                    className="resize-none"
+                    placeholder="Notas internas sobre este cambio..."
+                  />
+                </div>
+                <Button
+                  className="w-full font-semibold shadow-sm"
+                  size="lg"
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      const updateData: Record<string, any> = {
+                        estado,
+                        agente_asigno: (agente === 'Otro' ? agenteOtro : agente) || null,
+                        updated_at: new Date().toISOString(),
+                      };
+                      if (observaciones) {
+                        updateData.observaciones = observaciones;
+                      }
+
+                      const { error } = await supabase
+                        .from('asignaciones_visita' as any)
+                        .update(updateData)
+                        .eq('id_asignacion', asignacionViewing.id_asignacion);
+
+                      if (error) throw error;
+
+                      toast.success(`Estado actualizado a "${ESTADO_LABELS[estado]}"`);
+                      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+                      qc.invalidateQueries({ queryKey: ['disponibilidad-visitas'] });
+                      
+                      setViewingAsignacionId(null);
+                      setEstado('asignado');
+                      setAgente('Pablo');
+                      setAgenteOtro('');
+                      setObservaciones('');
+                    } catch (err: any) {
+                      toast.error(err.message || 'Error al actualizar');
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving || estado === asignacionViewing.estado}
+                >
+                  {saving ? 'Guardando...' : `Actualizar Estado a ${ESTADO_LABELS[estado]}`}
+                </Button>
+              </div>
+            </div>
           ) : (
             <>
               {/* Selected solicitud summary */}
