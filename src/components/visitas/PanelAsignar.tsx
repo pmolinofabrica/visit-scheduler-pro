@@ -131,6 +131,15 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
     }
   };
 
+  const formatTime = (inicio?: string, fin?: string) => {
+    if (!inicio || !fin) return '';
+    const [hi, mi] = inicio.split(':').map(Number);
+    const [hf, mf] = fin.split(':').map(Number);
+    const dInicio = new Date(); dInicio.setHours(hi, mi + 15);
+    const dFin = new Date(); dFin.setHours(hf, mf - 15);
+    return `${dInicio.toTimeString().slice(0, 5)} - ${dFin.toTimeString().slice(0, 5)}`;
+  };
+
   if (loadingAsig) return <p className="text-muted-foreground p-4">Cargando solicitudes...</p>;
 
   return (
@@ -227,7 +236,7 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                             {new Date(slotSeleccionado.fecha + 'T12:00:00').getDate()}/{MES_NOMBRE[slotSeleccionado.mes]}
                           </p>
                           <p className="text-xs font-medium">
-                            {slotSeleccionado.tipo_turno} ({slotSeleccionado.hora_inicio ? new Date(new Date().setHours(...slotSeleccionado.hora_inicio.split(':').map(Number) as [number, number])).setMinutes(new Date(new Date().setHours(...slotSeleccionado.hora_inicio.split(':').map(Number) as [number, number])).getMinutes() + 15) && new Date(new Date().setHours(...slotSeleccionado.hora_inicio.split(':').map(Number) as [number, number])).setMinutes(new Date(new Date().setHours(...slotSeleccionado.hora_inicio.split(':').map(Number) as [number, number])).getMinutes() + 15) ? new Date(new Date().setHours(...slotSeleccionado.hora_inicio.split(':').map(Number) as [number, number])).setMinutes(new Date(new Date().setHours(...slotSeleccionado.hora_inicio.split(':').map(Number) as [number, number])).getMinutes() + 15) && new Date(new Date(new Date().setHours(...slotSeleccionado.hora_inicio.split(':').map(Number) as [number, number])).setMinutes(new Date(new Date().setHours(...slotSeleccionado.hora_inicio.split(':').map(Number) as [number, number])).getMinutes() + 15)).toTimeString().slice(0, 5) : '' : ''} - {slotSeleccionado.hora_fin ? new Date(new Date().setHours(...slotSeleccionado.hora_fin.split(':').map(Number) as [number, number])).setMinutes(new Date(new Date().setHours(...slotSeleccionado.hora_fin.split(':').map(Number) as [number, number])).getMinutes() + 15) && new Date(new Date(new Date().setHours(...slotSeleccionado.hora_fin.split(':').map(Number) as [number, number])).setMinutes(new Date(new Date().setHours(...slotSeleccionado.hora_fin.split(':').map(Number) as [number, number])).getMinutes() + 15)).toTimeString().slice(0, 5) : ''})
+                            {slotSeleccionado.tipo_turno} ({formatTime(slotSeleccionado.hora_inicio, slotSeleccionado.hora_fin)})
                           </p>
                           <p className="text-xs text-muted-foreground mt-1 bg-background inline-block px-1.5 py-0.5 rounded border">
                             Cupo Disponible: {Math.round(slotSeleccionado.cupo_disponible)} de {slotSeleccionado.cupo_total}
