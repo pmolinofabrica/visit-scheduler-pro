@@ -110,10 +110,11 @@ export function SeguimientoLlamados({ idAsignacion }: Props) {
 
           <div className="flex items-center gap-2">
             <Input
-              type="date"
-              className="h-7 text-xs px-2 bg-background/50 w-[130px]"
-              value={fechaLlamado}
-              onChange={e => setFechaLlamado(e.target.value)}
+              type="text"
+              placeholder="DD/MM"
+              className="h-7 text-xs px-2 bg-background/50 w-[70px] text-center"
+              value={diaMes}
+              onChange={e => setDiaMes(e.target.value)}
             />
             <div className="flex items-center gap-1.5 shrink-0 bg-background/50 border rounded-md px-2 h-7">
               <Checkbox id={`atendio-${idAsignacion}`} checked={atendio} onCheckedChange={(c) => setAtendio(!!c)} />

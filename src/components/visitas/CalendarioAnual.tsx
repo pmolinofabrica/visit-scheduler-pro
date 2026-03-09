@@ -156,7 +156,7 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                             <span className={cn('h-3 w-3 rounded-full', getSemaforoColor(slot.semaforo))} />
                           </div>
                           <div className="text-xs mt-1 opacity-80">
-                            {slot.hora_inicio?.slice(0, 5)} - {slot.hora_fin?.slice(0, 5)}
+                            {add15Mins(slot.hora_inicio)} - {add15Mins(slot.hora_fin)}
                           </div>
                           <div className="flex items-center gap-2 mt-1.5 text-xs">
                             <span className="font-bold">{Math.round(slot.cupo_disponible)} disp.</span>
