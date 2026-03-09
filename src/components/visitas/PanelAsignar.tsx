@@ -56,6 +56,8 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
   const handleSelectAsignacionFromCalendar = (id: number) => {
     setViewingAsignacionId(id);
     setSelectedSolicitudId(null);
+    const viewed = asignaciones.find(a => a.id_asignacion === id);
+    if (viewed) setEstado(viewed.estado);
   };
 
   const handleSubmit = async () => {
