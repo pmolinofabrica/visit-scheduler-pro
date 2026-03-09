@@ -13,6 +13,7 @@ export interface SlotDisponibilidad {
   cupo_en_espera: number;
   cupo_disponible: number;
   semaforo: 'verde' | 'amarillo' | 'rojo';
+  residentes_convocados?: number;
 }
 
 export interface AsignacionVisita {

@@ -10,11 +10,12 @@ interface Props {
   asignaciones: AsignacionVisita[];
   mesSolicitado?: number;
   selectedSlot?: number | null;
+  cupoRequerido?: number;
   onSelectSlot: (id_plani: number) => void;
   onSelectAsignacion?: (id_asignacion: number) => void;
 }
 
-export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selectedSlot, onSelectSlot, onSelectAsignacion }: Props) {
+export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selectedSlot, cupoRequerido = 0, onSelectSlot, onSelectAsignacion }: Props) {
   const mesesDisponibles = useMemo(() => {
     return [...new Set(slots.map(s => s.mes))].sort((a, b) => a - b);
   }, [slots]);
@@ -46,7 +47,16 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
 
   const idxActual = mesesDisponibles.indexOf(mesActivo);
 
-  const getSemaforoColor = (semaforo: string) => {
+  const getSemaforoDinamico = (slot: SlotDisponibilidad) => {
+    // Si la solicitud actual está sobreescribiendo algo, restamos del cupo disponible
+    const cupoRestante = slot.cupo_disponible - cupoRequerido;
+    if (cupoRestante > 15) return 'verde';
+    if (cupoRestante >= -15) return 'amarillo';
+    return 'rojo';
+  };
+
+  const getSemaforoColor = (slot: SlotDisponibilidad) => {
+    const semaforo = getSemaforoDinamico(slot);
     switch (semaforo) {
       case 'verde': return 'bg-semaforo-verde';
       case 'amarillo': return 'bg-semaforo-amarillo';
@@ -55,7 +65,8 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
     }
   };
 
-  const getSemaforoBg = (semaforo: string) => {
+  const getSemaforoBg = (slot: SlotDisponibilidad) => {
+    const semaforo = getSemaforoDinamico(slot);
     switch (semaforo) {
       case 'verde': return 'bg-semaforo-verde-bg border-semaforo-verde hover:shadow-md';
       case 'amarillo': return 'bg-semaforo-amarillo-bg border-semaforo-amarillo hover:shadow-md';
@@ -66,7 +77,22 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
 
   const truncateName = (name: string | null, max = 18) => {
     if (!name) return '—';
-    return name.length > max ? name.slice(0, max) + '…' : name;
+    
+    // Abbreviations
+    const abbrMap: Record<string, string> = {
+      'escuela': 'E.', 'jardín': 'J.', 'jardin': 'J.',
+      'primaria': 'P.', 'secundaria': 'S.', 'terciaria': 'T.',
+      'universitaria': 'U.', 'instituto': 'I.', 'colegio': 'C.',
+      'educación': 'Ed.', 'especial': 'Esp.'
+    };
+    
+    let abbrName = name;
+    Object.keys(abbrMap).forEach(key => {
+      const regex = new RegExp(`\\b${key}\\b`, 'gi');
+      abbrName = abbrName.replace(regex, abbrMap[key]);
+    });
+    
+    return abbrName.length > max ? abbrName.slice(0, max) + '…' : abbrName;
   };
 
   const add15Mins = (timeStr?: string) => {
@@ -152,16 +178,22 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                         <button
                           onClick={() => onSelectSlot(slot.id_plani)}
                           className={cn(
-                            'rounded-lg border-2 p-3 text-left transition-all w-full',
-                            getSemaforoBg(slot.semaforo),
-                            selectedSlot === slot.id_plani && 'ring-2 ring-ring ring-offset-2 scale-[1.02]'
+                            'rounded-lg border-2 p-3 text-left transition-all w-full relative',
+                            getSemaforoBg(slot),
+                            selectedSlot === slot.id_plani && 'ring-2 ring-ring ring-offset-2 scale-[1.02]',
+                            mesSolicitado === slot.mes && 'ring-2 ring-primary ring-offset-1 shadow-md'
                           )}
                         >
+                          {mesSolicitado === slot.mes && (
+                            <span className="absolute -top-2 -right-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                              Solicitado
+                            </span>
+                          )}
                           <div className="flex items-center justify-between">
                             <span className="font-semibold text-sm">
                               {slot.tipo_turno === 'Turno mañana' ? '🌅 Mañana' : '🌆 Tarde'}
                             </span>
-                            <span className={cn('h-3 w-3 rounded-full', getSemaforoColor(slot.semaforo))} />
+                            <span className={cn('h-3 w-3 rounded-full', getSemaforoColor(slot))} />
                           </div>
                           <div className="text-xs mt-1 opacity-80">
                             {add15Mins(slot.hora_inicio)} - {add15Mins(slot.hora_fin)}
@@ -173,6 +205,11 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                                 {Math.round(slot.cupo_en_espera)} espera
                               </span>
                             )}
+                            {slot.residentes_convocados ? (
+                              <span className="ml-auto flex items-center justify-center rounded bg-secondary px-1.5 text-[10px] font-medium text-secondary-foreground" title="Residentes convocados">
+                                👥 {slot.residentes_convocados}
+                              </span>
+                            ) : null}
                           </div>
                         </button>
 
