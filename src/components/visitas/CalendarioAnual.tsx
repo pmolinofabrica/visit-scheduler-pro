@@ -178,16 +178,22 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                         <button
                           onClick={() => onSelectSlot(slot.id_plani)}
                           className={cn(
-                            'rounded-lg border-2 p-3 text-left transition-all w-full',
-                            getSemaforoBg(slot.semaforo),
-                            selectedSlot === slot.id_plani && 'ring-2 ring-ring ring-offset-2 scale-[1.02]'
+                            'rounded-lg border-2 p-3 text-left transition-all w-full relative',
+                            getSemaforoBg(slot),
+                            selectedSlot === slot.id_plani && 'ring-2 ring-ring ring-offset-2 scale-[1.02]',
+                            mesSolicitado === slot.mes && 'ring-2 ring-primary ring-offset-1 shadow-md'
                           )}
                         >
+                          {mesSolicitado === slot.mes && (
+                            <span className="absolute -top-2 -right-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                              Solicitado
+                            </span>
+                          )}
                           <div className="flex items-center justify-between">
                             <span className="font-semibold text-sm">
                               {slot.tipo_turno === 'Turno mañana' ? '🌅 Mañana' : '🌆 Tarde'}
                             </span>
-                            <span className={cn('h-3 w-3 rounded-full', getSemaforoColor(slot.semaforo))} />
+                            <span className={cn('h-3 w-3 rounded-full', getSemaforoColor(slot))} />
                           </div>
                           <div className="text-xs mt-1 opacity-80">
                             {add15Mins(slot.hora_inicio)} - {add15Mins(slot.hora_fin)}
