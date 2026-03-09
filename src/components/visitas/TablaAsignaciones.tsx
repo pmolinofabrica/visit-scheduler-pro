@@ -45,7 +45,7 @@ export function TablaAsignaciones({ soloConfirmados, estadosFiltrados = [] }: Pr
     cancelado: 'bg-badge-cancelled text-primary-foreground',
     pendiente: 'bg-muted text-muted-foreground',
     duplicado: 'bg-muted text-muted-foreground',
-    corregido: 'bg-muted text-muted-foreground',
+    modificar: 'bg-accent text-accent-foreground',
   };
 
   const handleCambioEstado = async (id: number, estado: string) => {
