@@ -26,7 +26,7 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
   const asignacionesPorPlani = useMemo(() => {
     const map: Record<number, AsignacionVisita[]> = {};
     asignaciones
-      .filter(a => a.id_plani && a.estado !== 'pendiente' && a.estado !== 'cancelado' && a.estado !== 'duplicado')
+      .filter(a => a.id_plani && a.estado !== 'pendiente' && a.estado !== 'duplicado')
       .forEach(a => {
         if (!map[a.id_plani!]) map[a.id_plani!] = [];
         map[a.id_plani!].push(a);
