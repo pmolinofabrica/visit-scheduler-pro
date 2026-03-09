@@ -47,7 +47,16 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
 
   const idxActual = mesesDisponibles.indexOf(mesActivo);
 
-  const getSemaforoColor = (semaforo: string) => {
+  const getSemaforoDinamico = (slot: SlotDisponibilidad) => {
+    // Si la solicitud actual está sobreescribiendo algo, restamos del cupo disponible
+    const cupoRestante = slot.cupo_disponible - cupoRequerido;
+    if (cupoRestante > 15) return 'verde';
+    if (cupoRestante >= -15) return 'amarillo';
+    return 'rojo';
+  };
+
+  const getSemaforoColor = (slot: SlotDisponibilidad) => {
+    const semaforo = getSemaforoDinamico(slot);
     switch (semaforo) {
       case 'verde': return 'bg-semaforo-verde';
       case 'amarillo': return 'bg-semaforo-amarillo';
@@ -56,7 +65,8 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
     }
   };
 
-  const getSemaforoBg = (semaforo: string) => {
+  const getSemaforoBg = (slot: SlotDisponibilidad) => {
+    const semaforo = getSemaforoDinamico(slot);
     switch (semaforo) {
       case 'verde': return 'bg-semaforo-verde-bg border-semaforo-verde hover:shadow-md';
       case 'amarillo': return 'bg-semaforo-amarillo-bg border-semaforo-amarillo hover:shadow-md';
