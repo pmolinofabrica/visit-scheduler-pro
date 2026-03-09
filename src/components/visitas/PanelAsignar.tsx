@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { CalendarDays, Users, Send } from 'lucide-react';
 import { DetalleAsignacion } from './DetalleAsignacion';
-import { FormEdicionAsignacion } from './FormEdicionAsignacion';
+import { FormModificacion } from './FormModificacion';
 
 interface Props {
   estadosFiltrados?: string[];
