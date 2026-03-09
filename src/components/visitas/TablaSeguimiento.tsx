@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Phone, PhoneOff, Mail, MailCheck, FileText, History, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
