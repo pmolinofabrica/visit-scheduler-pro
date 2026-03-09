@@ -77,7 +77,22 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
 
   const truncateName = (name: string | null, max = 18) => {
     if (!name) return '—';
-    return name.length > max ? name.slice(0, max) + '…' : name;
+    
+    // Abbreviations
+    const abbrMap: Record<string, string> = {
+      'escuela': 'E.', 'jardín': 'J.', 'jardin': 'J.',
+      'primaria': 'P.', 'secundaria': 'S.', 'terciaria': 'T.',
+      'universitaria': 'U.', 'instituto': 'I.', 'colegio': 'C.',
+      'educación': 'Ed.', 'especial': 'Esp.'
+    };
+    
+    let abbrName = name;
+    Object.keys(abbrMap).forEach(key => {
+      const regex = new RegExp(`\\b${key}\\b`, 'gi');
+      abbrName = abbrName.replace(regex, abbrMap[key]);
+    });
+    
+    return abbrName.length > max ? abbrName.slice(0, max) + '…' : abbrName;
   };
 
   const add15Mins = (timeStr?: string) => {
