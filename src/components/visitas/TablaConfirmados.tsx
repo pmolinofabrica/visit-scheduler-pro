@@ -4,12 +4,12 @@ import { DIA_SEMANA, MES_NOMBRE } from '@/lib/types-visitas';
 import type { AsignacionVisita } from '@/lib/types-visitas';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Calendar, Clock, Users, Building, Phone, Mail, Sun, Moon } from 'lucide-react';
-import { format, isToday, isTomorrow, isPast } from 'date-fns';
+import { Calendar, Users, Building, Phone, Mail, Sun, Moon } from 'lucide-react';
+import { isToday, isTomorrow, isPast } from 'date-fns';
 
 export function TablaConfirmados() {
   const { data: asignaciones = [], isLoading } = useAsignaciones();
-  const { data: slots = [] } = useDisponibilidad(2026);
+  const { data: slots = [] } = useDisponibilidad(new Date().getFullYear());
 
   const slotMap = useMemo(() => {
     const m: Record<number, any> = {};

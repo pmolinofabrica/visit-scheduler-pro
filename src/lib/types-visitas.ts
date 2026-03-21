@@ -16,11 +16,13 @@ export interface SlotDisponibilidad {
   residentes_convocados?: number;
 }
 
+export type AsignacionEstado = 'pendiente' | 'asignado' | 'en_espera' | 'confirmado' | 'cancelado' | 'duplicado' | 'corregido';
+
 export interface AsignacionVisita {
   id_asignacion: number;
   id_visita: number | null;
   id_plani: number | null;
-  estado: 'pendiente' | 'asignado' | 'en_espera' | 'confirmado' | 'cancelado' | 'duplicado' | 'corregido';
+  estado: AsignacionEstado;
   cantidad_personas_original: number;
   id_coeficiente: number | null;
   coeficiente_aplicado: number;
@@ -62,7 +64,6 @@ export const ESTADO_LABELS: Record<string, string> = {
   cancelado: 'Cancelado',
   duplicado: 'Duplicado',
   corregido: 'Corregido',
-  modificar: 'Modificar',
 };
 
 export const DIA_SEMANA: Record<number, string> = {

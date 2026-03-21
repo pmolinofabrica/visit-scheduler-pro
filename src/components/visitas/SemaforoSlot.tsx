@@ -9,6 +9,22 @@ interface Props {
   destacado?: boolean;
 }
 
+const add15Mins = (timeStr?: string) => {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const date = new Date();
+  date.setHours(h, m + 15);
+  return date.toTimeString().slice(0, 5);
+};
+
+const sub15Mins = (timeStr?: string) => {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const date = new Date();
+  date.setHours(h, m - 15);
+  return date.toTimeString().slice(0, 5);
+};
+
 export function SemaforoSlot({ slot, selected, onClick, destacado }: Props) {
   const fecha = new Date(slot.fecha + 'T12:00:00');
   const dia = fecha.getDate();
@@ -51,12 +67,12 @@ export function SemaforoSlot({ slot, selected, onClick, destacado }: Props) {
         {slot.tipo_turno === 'Turno mañana' ? '🌅 Mañana' : '🌆 Tarde'}
       </span>
       <span className="text-xs opacity-70">
-        {slot.hora_inicio?.slice(0, 5)} - {slot.hora_fin?.slice(0, 5)}
+        {add15Mins(slot.hora_inicio)} - {sub15Mins(slot.hora_fin)}
       </span>
       <div className="mt-1 flex w-full items-center gap-2 text-xs">
         <span className="font-semibold">{Math.round(slot.cupo_disponible)} disp.</span>
         {slot.cupo_en_espera > 0 && (
-          <span className="rounded bg-espera-bg px-1 text-espera">
+          <span className="rounded bg-espera-bg px-1 text-espera" title="Hay grupos en espera para revisar antes de decidir">
             {Math.round(slot.cupo_en_espera)} espera
           </span>
         )}

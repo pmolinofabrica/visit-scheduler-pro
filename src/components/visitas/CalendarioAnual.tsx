@@ -196,12 +196,12 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                             <span className={cn('h-3 w-3 rounded-full', getSemaforoColor(slot))} />
                           </div>
                           <div className="text-xs mt-1 opacity-80">
-                            {add15Mins(slot.hora_inicio)} - {add15Mins(slot.hora_fin)}
+                            {add15Mins(slot.hora_inicio)} - {sub15Mins(slot.hora_fin)}
                           </div>
                           <div className="flex items-center gap-2 mt-1.5 text-xs">
                             <span className="font-bold">{Math.round(slot.cupo_disponible)} disp.</span>
                             {slot.cupo_en_espera > 0 && (
-                              <span className="rounded bg-espera-bg px-1 text-espera">
+                              <span className="rounded bg-espera-bg px-1 text-espera" title="Hay grupos en espera para revisar antes de decidir">
                                 {Math.round(slot.cupo_en_espera)} espera
                               </span>
                             )}

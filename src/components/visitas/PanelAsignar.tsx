@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { useAsignaciones, useDisponibilidad, useActualizarEstado } from '@/hooks/useVisitas';
+import { useAsignaciones, useDisponibilidad } from '@/hooks/useVisitas';
 import { ListaSolicitudes } from './ListaSolicitudes';
 import { CalendarioAnual } from './CalendarioAnual';
 import { ESTADO_LABELS, MES_NOMBRE, DIA_SEMANA } from '@/lib/types-visitas';
-import type { AsignacionVisita } from '@/lib/types-visitas';
+import type { AsignacionEstado, AsignacionVisita } from '@/lib/types-visitas';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -20,14 +20,21 @@ interface Props {
   estadosFiltrados?: string[];
 }
 
+type EstadoPanel = AsignacionEstado | 'modificar';
+
+const ESTADO_PANEL_LABELS: Record<EstadoPanel, string> = {
+  ...ESTADO_LABELS,
+  modificar: 'Modificar datos',
+};
+
 export function PanelAsignar({ estadosFiltrados = [] }: Props) {
   const { data: asignaciones = [], isLoading: loadingAsig } = useAsignaciones();
-  const { data: slots = [] } = useDisponibilidad(2026);
+  const { data: slots = [] } = useDisponibilidad(new Date().getFullYear());
   const qc = useQueryClient();
 
   const [selectedSolicitudId, setSelectedSolicitudId] = useState<number | null>(null);
   const [selectedPlani, setSelectedPlani] = useState<number | null>(null);
-  const [estado, setEstado] = useState<string>('asignado');
+  const [estado, setEstado] = useState<EstadoPanel>('asignado');
   const [agente, setAgente] = useState('Pablo');
   const [agenteOtro, setAgenteOtro] = useState('');
   const [observaciones, setObservaciones] = useState('');
@@ -89,7 +96,7 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
 
       if (error) throw error;
 
-      toast.success(`Solicitud actualizada a "${ESTADO_LABELS[estado]}"`);
+      toast.success(`Solicitud actualizada a "${ESTADO_PANEL_LABELS[estado]}"`);
       qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
       qc.invalidateQueries({ queryKey: ['disponibilidad-visitas'] });
 
@@ -375,6 +382,11 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                           <p className="text-xs text-muted-foreground mt-1 bg-background inline-block px-1.5 py-0.5 rounded border">
                             Cupo Disponible: {Math.round(slotSeleccionado.cupo_disponible)} de {slotSeleccionado.cupo_total}
                           </p>
+                          {slotSeleccionado.cupo_en_espera > 0 && (
+                            <p className="text-xs text-espera font-medium">
+                              Hay {Math.round(slotSeleccionado.cupo_en_espera)} cupos en espera para revisar antes de decidir.
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground p-3 border border-dashed rounded-lg text-center bg-muted/30">

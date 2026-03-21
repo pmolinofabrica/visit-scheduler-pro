@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import Index from "./pages/Index";
 import PanelVisitas from "./pages/PanelVisitas";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
