@@ -1,10 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { AsignacionVisita } from '@/lib/types-visitas';
 import { MES_NOMBRE } from '@/lib/types-visitas';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Users, School, Phone } from 'lucide-react';
+import { Users, School, Phone, ArrowDownAZ, CalendarDays, Hash } from 'lucide-react';
 import { SeguimientoLlamados } from './SeguimientoLlamados';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Props {
   solicitudes: AsignacionVisita[];
@@ -12,10 +19,33 @@ interface Props {
   onSelect: (id: number) => void;
 }
 
+type SortCriteria = 'mes' | 'fecha' | 'llamados';
+
 export function ListaSolicitudes({ solicitudes, selectedId, onSelect }: Props) {
+  const [sortBy, setSortBy] = useState<SortCriteria>('mes');
+
   const pendientes = useMemo(() => {
-    return solicitudes.filter(s => s.estado === 'pendiente');
-  }, [solicitudes]);
+    let list = solicitudes.filter(s => s.estado === 'pendiente');
+
+    list.sort((a, b) => {
+      if (sortBy === 'mes') {
+        const mesA = a.mes_solicitado || 99;
+        const mesB = b.mes_solicitado || 99;
+        return mesA - mesB;
+      }
+      if (sortBy === 'fecha') {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      if (sortBy === 'llamados') {
+        const llamadasA = a.cantidad_llamados || 0;
+        const llamadasB = b.cantidad_llamados || 0;
+        return llamadasA - llamadasB;
+      }
+      return 0;
+    });
+
+    return list;
+  }, [solicitudes, sortBy]);
 
   if (pendientes.length === 0) {
     return (
@@ -31,8 +61,37 @@ export function ListaSolicitudes({ solicitudes, selectedId, onSelect }: Props) {
   }
 
   return (
-    <div className="space-y-2 max-h-[75vh] overflow-y-auto pr-1 pb-10">
-      {pendientes.map(s => {
+    <div className="flex flex-col h-full gap-3">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+          <span>Ordenar por:</span>
+        </div>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortCriteria)}>
+          <SelectTrigger className="h-8 text-xs border-dashed w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="mes" className="text-xs">
+              <div className="flex items-center gap-1.5">
+                <CalendarDays className="h-3 w-3" /> Mes solicitado
+              </div>
+            </SelectItem>
+            <SelectItem value="fecha" className="text-xs">
+              <div className="flex items-center gap-1.5">
+                <ArrowDownAZ className="h-3 w-3" /> Fecha completado
+              </div>
+            </SelectItem>
+            <SelectItem value="llamados" className="text-xs">
+              <div className="flex items-center gap-1.5">
+                <Hash className="h-3 w-3" /> Cantidad de llamados
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2 max-h-[75vh] overflow-y-auto pr-1 pb-10">
+        {pendientes.map(s => {
         const isSelected = selectedId === s.id_asignacion;
         const phones = [s.telefono_referente, s.telefono_institucion].filter(Boolean);
         
@@ -94,6 +153,7 @@ export function ListaSolicitudes({ solicitudes, selectedId, onSelect }: Props) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
