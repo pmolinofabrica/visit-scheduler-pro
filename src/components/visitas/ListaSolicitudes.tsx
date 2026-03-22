@@ -39,7 +39,7 @@ export function ListaSolicitudes({ solicitudes, selectedId, onSelect }: Props) {
       if (sortBy === 'llamados') {
         const llamadasA = a.cantidad_llamados || 0;
         const llamadasB = b.cantidad_llamados || 0;
-        return llamadasB - llamadasA;
+        return llamadasA - llamadasB;
       }
       return 0;
     });
