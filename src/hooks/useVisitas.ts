@@ -24,10 +24,16 @@ export function useAsignaciones() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('asignaciones_visita' as any)
-        .select('*')
+        .select('*, seguimiento_llamados_visita(count)')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as unknown as AsignacionVisita[];
+
+      return (data || []).map(row => ({
+        ...row,
+        cantidad_llamados: row.seguimiento_llamados_visita && row.seguimiento_llamados_visita.length > 0
+          ? row.seguimiento_llamados_visita[0].count
+          : 0
+      })) as unknown as AsignacionVisita[];
     },
   });
 }
