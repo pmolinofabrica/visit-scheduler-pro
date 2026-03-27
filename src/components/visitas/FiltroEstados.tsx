@@ -18,7 +18,7 @@ export function FiltroEstados({ value, onChange }: Props) {
             key={e}
             value={e}
             size="sm"
-            className="text-xs h-7 px-2.5 font-semibold rounded-lg border border-transparent data-[state=on]:bg-primary-foreground/20 data-[state=on]:border-primary-foreground/30 transition-all"
+            className="text-xs h-7 px-2.5 font-semibold rounded-lg border border-transparent data-[state=on]:text-pink-300 data-[state=on]:bg-transparent data-[state=on]:border-fuchsia-500 transition-all"
           >
             {ESTADO_LABELS[e]}
           </ToggleGroupItem>
