@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useAsignaciones, useDisponibilidad, useSeguimientoLlamados, useCrearSeguimientoLlamado } from '@/hooks/useVisitas';
+import { useAsignaciones, useDisponibilidad, useSeguimientoLlamados, useCrearSeguimientoLlamado, useSolicitudesPendientes } from '@/hooks/useVisitas';
 import { ESTADO_LABELS, MES_NOMBRE } from '@/lib/types-visitas';
 import type { AsignacionVisita } from '@/lib/types-visitas';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FormModificacion } from './FormModificacion';
+import { Pencil, Trash2, Copy } from 'lucide-react';
 
 interface Props {
   estadosFiltrados?: string[];
@@ -135,10 +137,13 @@ Saludos cordiales.`,
   };
 }
 
-function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any }) {
-  const { data: llamados = [] } = useSeguimientoLlamados(asignacion.id_asignacion);
-  const { data: historial = [] } = useHistorial(asignacion.id_asignacion);
-  const { data: correos = [] } = useCorreos(asignacion.id_asignacion);
+function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolicitudCruda?: boolean; originalSolicitud?: any }; slot: any }) {
+  const isCruda = asignacion.isSolicitudCruda;
+  const idAsigSafe = isCruda ? null : asignacion.id_asignacion;
+
+  const { data: llamados = [] } = useSeguimientoLlamados(idAsigSafe);
+  const { data: historial = [] } = useHistorial(idAsigSafe);
+  const { data: correos = [] } = useCorreos(idAsigSafe);
   const crearLlamado = useCrearSeguimientoLlamado();
   const qc = useQueryClient();
   
@@ -149,6 +154,89 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
   const [emailAsunto, setEmailAsunto] = useState('');
   const [emailCuerpo, setEmailCuerpo] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const handleGuardarModificacion = async (formData: Partial<AsignacionVisita>, duplicar: boolean) => {
+    setSavingEdit(true);
+    try {
+      const updateData = {
+        ...formData,
+        updated_at: new Date().toISOString(),
+      };
+      
+      const { error } = await supabase
+        .from('asignaciones_visita' as any)
+        .update(updateData as any)
+        .eq('id_asignacion', asignacion.id_asignacion);
+
+      if (error) throw error;
+
+      if (duplicar) {
+        const { id_asignacion, created_at, updated_at, planificacion, id_plani, id_visita, estado, agente_asigno, ...rest } = asignacion as any;
+        const baseName = formData.nombre_institucion || updateData.nombre_institucion || 'Sin institución';
+        const randomId = Math.floor(Math.random() * 1000);
+        
+        const insertData = { 
+          ...rest, 
+          ...formData,
+          nombre_institucion: `${baseName} (Copia #${randomId})`,
+          estado_actual: 'pendiente', 
+          marca_temporal: new Date().toISOString() 
+        };
+        
+        const { error: errorInsert } = await supabase
+          .from('solicitudes' as any)
+          .insert([insertData as any]);
+        
+        if (errorInsert) throw errorInsert;
+        toast.success('Registro editado y duplicado (creado en estado Pendiente)');
+        qc.invalidateQueries({ queryKey: ['solicitudes-pendientes'] });
+      } else {
+        toast.success('Solicitud modificada correctamente');
+      }
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+      setIsEditing(false);
+    } catch (e: any) {
+      toast.error(e.message || 'Error al guardar modificación');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleEliminar = async () => {
+    if (!confirm('¿Estás seguro de que querés ELIMINAR definitivamente este turno? Esta acción no se puede deshacer.')) return;
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from('asignaciones_visita' as any)
+        .delete()
+        .eq('id_asignacion', asignacion.id_asignacion);
+      if (error) throw error;
+      toast.success('Turno eliminado permanentemente');
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Error al eliminar');
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      const { id_asignacion, created_at, updated_at, planificacion, id_plani, id_visita, estado, agente_asigno, ...rest } = asignacion as any;
+      const insertData = { ...rest, estado_actual: 'pendiente', marca_temporal: new Date().toISOString() };
+      
+      const { error } = await supabase.from('solicitudes' as any).insert([insertData]);
+      if (error) throw error;
+      
+      toast.success('Turno duplicado (enviado a lista de pendientes)');
+      qc.invalidateQueries({ queryKey: ['solicitudes-pendientes'] });
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Error al duplicar');
+    }
+  };
 
   const handleAddLlamado = async () => {
     try {
@@ -292,74 +380,107 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
         <p className="text-xs text-muted-foreground italic">Sin acciones registradas</p>
       )}
 
-      {/* Add call */}
-      <div className="flex gap-2 items-end border-t pt-3">
-        <div className="flex-1">
-          <Input
-            placeholder="Observación del llamado..."
-            value={newObs}
-            onChange={e => setNewObs(e.target.value)}
+      {!isCruda && (
+        <div className="flex gap-2 items-end border-t pt-3">
+          <div className="flex-1">
+            <Input
+              placeholder="Observación del llamado..."
+              value={newObs}
+              onChange={e => setNewObs(e.target.value)}
+              className="h-8 text-xs"
+            />
+          </div>
+          <Button
+            size="sm"
+            variant={newAtendio ? 'default' : 'outline'}
             className="h-8 text-xs"
-          />
+            onClick={() => setNewAtendio(!newAtendio)}
+          >
+            {newAtendio ? '✅ Atendió' : '❌ No atendió'}
+          </Button>
+          <Button size="sm" className="h-8 text-xs" onClick={handleAddLlamado} disabled={crearLlamado.isPending}>
+            <Plus className="h-3 w-3 mr-1" /> Llamado
+          </Button>
         </div>
-        <Button
-          size="sm"
-          variant={newAtendio ? 'default' : 'outline'}
-          className="h-8 text-xs"
-          onClick={() => setNewAtendio(!newAtendio)}
-        >
-          {newAtendio ? '✅ Atendió' : '❌ No atendió'}
-        </Button>
-        <Button size="sm" className="h-8 text-xs" onClick={handleAddLlamado} disabled={crearLlamado.isPending}>
-          <Plus className="h-3 w-3 mr-1" /> Llamado
-        </Button>
-      </div>
+      )}
 
       {/* Email actions */}
-      <div className="border-t pt-3 space-y-2">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-          <Mail className="h-3.5 w-3.5" /> Correos
-        </h4>
-        {!showEmailForm ? (
+      {!isCruda && (
+        <div className="border-t pt-3 space-y-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            <Mail className="h-3.5 w-3.5" /> Correos
+          </h4>
+          {!showEmailForm ? (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handlePrepareEmail('asignacion')}>
+                <Send className="h-3 w-3 mr-1" /> Correo Asignación
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handlePrepareEmail('confirmacion')}>
+                <MailCheck className="h-3 w-3 mr-1" /> Correo Confirmación
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2 bg-card border rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className="text-xs">
+                  {emailType === 'asignacion' ? '📨 Asignación' : '✅ Confirmación'}
+                </Badge>
+                <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowEmailForm(false)}>✕</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Para: {asignacion.email_referente || 'Sin email'}</p>
+              <Input
+                value={emailAsunto}
+                onChange={e => setEmailAsunto(e.target.value)}
+                className="h-8 text-xs"
+                placeholder="Asunto..."
+              />
+              <Textarea
+                value={emailCuerpo}
+                onChange={e => setEmailCuerpo(e.target.value)}
+                rows={6}
+                className="text-xs resize-none"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" className="h-8 text-xs flex-1" onClick={() => handleSaveEmail('enviado')} disabled={savingEmail}>
+                  <Send className="h-3 w-3 mr-1" /> Marcar como enviado
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handleSaveEmail('borrador')} disabled={savingEmail}>
+                  <FileText className="h-3 w-3 mr-1" /> Borrador
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Copiá el texto y envialo desde tu cliente de correo. Luego marcalo como enviado.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Actions Admin */}
+      <div className="border-t pt-3 mt-2 space-y-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Administración</h4>
+        {isEditing && !isCruda ? (
+          <div className="pt-2">
+            <FormModificacion
+              asignacion={asignacion}
+              onSave={(data) => handleGuardarModificacion(data, false)}
+              onSaveAndDuplicate={(data) => handleGuardarModificacion(data, true)}
+              onCancel={() => setIsEditing(false)}
+              saving={savingEdit}
+            />
+          </div>
+        ) : !isCruda ? (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handlePrepareEmail('asignacion')}>
-              <Send className="h-3 w-3 mr-1" /> Correo Asignación
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setIsEditing(true)}>
+              <Pencil className="h-3 w-3 mr-1" /> Editar
             </Button>
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handlePrepareEmail('confirmacion')}>
-              <MailCheck className="h-3 w-3 mr-1" /> Correo Confirmación
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleDuplicate}>
+              <Copy className="h-3 w-3 mr-1" /> Duplicar
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 text-xs hover:bg-destructive/10 text-destructive border-destructive/30" onClick={handleEliminar} disabled={savingEdit}>
+              <Trash2 className="h-3 w-3 mr-1" /> Eliminar
             </Button>
           </div>
         ) : (
-          <div className="space-y-2 bg-card border rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-xs">
-                {emailType === 'asignacion' ? '📨 Asignación' : '✅ Confirmación'}
-              </Badge>
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowEmailForm(false)}>✕</Button>
-            </div>
-            <p className="text-xs text-muted-foreground">Para: {asignacion.email_referente || 'Sin email'}</p>
-            <Input
-              value={emailAsunto}
-              onChange={e => setEmailAsunto(e.target.value)}
-              className="h-8 text-xs"
-              placeholder="Asunto..."
-            />
-            <Textarea
-              value={emailCuerpo}
-              onChange={e => setEmailCuerpo(e.target.value)}
-              rows={6}
-              className="text-xs resize-none"
-            />
-            <div className="flex gap-2">
-              <Button size="sm" className="h-8 text-xs flex-1" onClick={() => handleSaveEmail('enviado')} disabled={savingEmail}>
-                <Send className="h-3 w-3 mr-1" /> Marcar como enviado
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handleSaveEmail('borrador')} disabled={savingEmail}>
-                <FileText className="h-3 w-3 mr-1" /> Borrador
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">Copiá el texto y envialo desde tu cliente de correo. Luego marcalo como enviado.</p>
-          </div>
+          <p className="text-xs text-muted-foreground italic col-span-3">Administrá la solicitud (Editar, Duplicar, Eliminar) desde la sección de Asignación.</p>
         )}
       </div>
     </div>
@@ -367,10 +488,12 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita; slot: any 
 }
 
 export function TablaSeguimiento({ estadosFiltrados = [] }: Props) {
-  const { data: asignaciones = [], isLoading } = useAsignaciones();
+  const { data: asignaciones = [], isLoading: loadAsig } = useAsignaciones();
+  const { data: solicitudesPendientes = [], isLoading: loadSol } = useSolicitudesPendientes();
   const { data: slots = [] } = useDisponibilidad(2026);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<string | number | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const slotMap = useMemo(() => {
     const m: Record<number, any> = {};
@@ -379,32 +502,85 @@ export function TablaSeguimiento({ estadosFiltrados = [] }: Props) {
   }, [slots]);
 
   const filtradas = useMemo(() => {
-    let list = asignaciones;
-    if (estadosFiltrados.length > 0) {
+    let list: any[] = [...asignaciones];
+    
+    // Add raw solicitudes inside the tracking if they meet pending
+    const mappedSols = solicitudesPendientes.map(s => ({
+       id_asignacion: `sol-${s.id}`,
+       id_plani: null,
+       estado: 'pendiente',
+       nombre_institucion: s.nombre_institucion,
+       nombre_referente: s.nombre_referente,
+       email_referente: s.email_referente,
+       telefono_referente: s.telefono_referente,
+       cantidad_personas_original: s.cantidad_visitantes,
+       isSolicitudCruda: true,
+       originalSolicitud: s
+    }));
+
+    list = [...list, ...mappedSols];
+
+    if (filtroEstado !== 'todos' && filtroEstado !== 'multiple') {
+      list = list.filter(a => a.estado === filtroEstado);
+    } else if (filtroEstado === 'multiple') {
+      const counts = new Map<string, number>();
+      list.forEach(a => {
+        const nombre = (a.nombre_institucion || '').trim().toLowerCase();
+        if (nombre) {
+          const baseName = nombre.replace(/\s*\(copia #\d+\)$/i, '');
+          counts.set(baseName, (counts.get(baseName) || 0) + 1);
+        }
+      });
+      list = list.filter(a => {
+        const nombre = (a.nombre_institucion || '').trim().toLowerCase();
+        if (!nombre) return false;
+        const baseName = nombre.replace(/\s*\(copia #\d+\)$/i, '');
+        return (counts.get(baseName) || 0) > 1;
+      });
+    } else if (estadosFiltrados.length > 0) {
       list = list.filter(a => estadosFiltrados.includes(a.estado));
     }
-    if (filtroEstado !== 'todos') {
-      list = list.filter(a => a.estado === filtroEstado);
-    }
-    return list;
-  }, [asignaciones, filtroEstado, estadosFiltrados]);
 
-  if (isLoading) return <p className="text-muted-foreground p-4">Cargando...</p>;
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(a => {
+        const inst = (a.nombre_institucion || '').toLowerCase();
+        const ref = (a.nombre_referente || '').toLowerCase();
+        const slot = a.id_plani ? slotMap[a.id_plani] : null;
+        const dateStr = slot ? new Date(slot.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '';
+        return inst.includes(q) || ref.includes(q) || dateStr.includes(q);
+      });
+    }
+
+    return list;
+  }, [asignaciones, solicitudesPendientes, filtroEstado, estadosFiltrados, searchTerm, slotMap]);
+
+  if (loadAsig || loadSol) return <p className="text-muted-foreground p-4">Cargando...</p>;
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2 flex-wrap">
-        {['todos', 'pendiente', 'asignado', 'en_espera', 'confirmado', 'cancelado', 'duplicado'].map(e => (
-          <Button
-            key={e}
-            size="sm"
-            variant={filtroEstado === e ? 'default' : 'outline'}
-            onClick={() => setFiltroEstado(e)}
-            className="text-xs"
-          >
-            {e === 'todos' ? 'Todos' : ESTADO_LABELS[e]}
-          </Button>
-        ))}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="flex gap-2 flex-wrap">
+          {['todos', 'pendiente', 'asignado', 'en_espera', 'confirmado', 'cancelado', 'multiple'].map(e => (
+            <Button
+              key={e}
+              size="sm"
+              variant={filtroEstado === e ? 'default' : 'outline'}
+              onClick={() => setFiltroEstado(e)}
+              className="text-xs"
+            >
+              {e === 'todos' ? 'Todos' : e === 'multiple' ? 'Múltiples Visitas' : ESTADO_LABELS[e]}
+            </Button>
+          ))}
+        </div>
+        <div className="w-full sm:w-64">
+           <Input
+             placeholder="Buscar por institución, fecha..."
+             value={searchTerm}
+             onChange={e => setSearchTerm(e.target.value)}
+             className="h-8 text-xs bg-white"
+           />
+        </div>
       </div>
 
       <div className="space-y-1">
@@ -432,9 +608,11 @@ export function TablaSeguimiento({ estadosFiltrados = [] }: Props) {
                     </span>
                   )}
                   <Badge className={cn('text-[10px] shrink-0', estadoColor[a.estado])}>
-                    {ESTADO_LABELS[a.estado]}
+                    {ESTADO_LABELS[a.estado as keyof typeof ESTADO_LABELS]}
                   </Badge>
-                  <span className="text-xs font-mono text-muted-foreground">#{a.id_asignacion}</span>
+                  <span className="text-xs font-mono text-muted-foreground truncate max-w-[60px]" title={a.id_asignacion.toString()}>
+                    #{typeof a.id_asignacion === 'string' ? 'F' : a.id_asignacion}
+                  </span>
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>

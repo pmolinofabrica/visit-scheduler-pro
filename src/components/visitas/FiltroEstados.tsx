@@ -1,7 +1,7 @@
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ESTADO_LABELS } from '@/lib/types-visitas';
 
-const ESTADOS_FILTRO = ['asignado', 'en_espera', 'confirmado', 'cancelado'] as const;
+const ESTADOS_FILTRO = ['pendiente', 'asignado', 'en_espera', 'confirmado', 'cancelado', 'duplicado'] as const;
 
 interface Props {
   value: string[];

@@ -1,0 +1,60 @@
+Resetting local database...
+Recreating database...
+Initialising schema...
+Seeding globals from roles.sql...
+Applying migration 00000000000000_bootstrap.sql...
+Applying migration 20260308230712_f50ea084-f21c-4b7f-9a77-9a28216e381d.sql...
+Applying migration 20260308230747_3feda041-8757-4baa-8a41-8e2030831dc5.sql...
+Applying migration 20260308231821_cc5a3ac0-f6dd-4aa6-9bfc-c12113250d60.sql...
+Applying migration 20260308232713_f25723dd-8622-4492-b357-2e814021c81a.sql...
+Applying migration 20260308233244_450b664f-73d4-42e7-8184-897189378825.sql...
+Applying migration 20260308234413_5f0254cb-0a69-493b-bff9-8ad5e17d6941.sql...
+Applying migration 20260308235634_b1545a8d-dac1-479f-b5a8-16e9b95a3e8f.sql...
+Applying migration 20260309000205_4957436c-67ec-42df-8101-80703f19d35e.sql...
+Applying migration 20260309000537_14b39a9b-b15f-4e87-b4b5-6d9730ec1714.sql...
+Applying migration 20260309001721_3520ef83-86a7-4404-8c59-2e6da48e9945.sql...
+ERROR: relation "convocatoria" does not exist (SQLSTATE 42P01)                                                                                               
+At statement: 0                                                                                                                                              
+CREATE OR REPLACE VIEW "public"."vista_disponibilidad_visitas" AS                                                                                            
+ SELECT p.id_plani,                                                                                                                                          
+    d.fecha,                                                                                                                                                 
+    d.mes,                                                                                                                                                   
+    d.anio,                                                                                                                                                  
+    d.numero_dia_semana,                                                                                                                                     
+    t.id_turno,                                                                                                                                              
+    t.tipo_turno,                                                                                                                                            
+    t.hora_inicio,                                                                                                                                           
+    t.hora_fin,                                                                                                                                              
+    120 AS cupo_total,                                                                                                                                       
+    COALESCE(sum(                                                                                                                                            
+        CASE                                                                                                                                                 
+            WHEN ((av.estado)::text = ANY (ARRAY[('asignado'::character varying)::text, ('confirmado'::character varying)::text])) THEN av.cupo_calculado    
+            ELSE (0)::numeric                                                                                                                                
+        END), (0)::numeric) AS cupo_ocupado_firme,                                                                                                           
+    COALESCE(sum(                                                                                                                                            
+        CASE                                                                                                                                                 
+            WHEN ((av.estado)::text = 'en_espera'::text) THEN av.cupo_calculado                                                                              
+            ELSE (0)::numeric                                                                                                                                
+        END), (0)::numeric) AS cupo_en_espera,                                                                                                               
+    ((120)::numeric - COALESCE(sum(                                                                                                                          
+        CASE                                                                                                                                                 
+            WHEN ((av.estado)::text = ANY (ARRAY[('asignado'::character varying)::text, ('confirmado'::character varying)::text])) THEN av.cupo_calculado    
+            ELSE (0)::numeric                                                                                                                                
+        END), (0)::numeric)) AS cupo_disponible,                                                                                                             
+        CASE                                                                                                                                                 
+            WHEN (((120)::numeric - COALESCE(sum(                                                                                                            
+            CASE                                                                                                                                             
+                WHEN ((av.estado)::text = ANY (ARRAY[('asignado'::character varying)::text, ('confirmado'::character varying)::text])) THEN av.cupo_calculado
+                ELSE (0)::numeric                                                                                                                            
+            END), (0)::numeric)) > (15)::numeric) THEN 'verde'::text                                                                                         
+            WHEN (((120)::numeric - COALESCE(sum(                                                                                                            
+            CASE                                                                                                                                             
+                WHEN ((av.estado)::text = ANY (ARRAY[('asignado'::character varying)::text, ('confirmado'::character varying)::text])) THEN av.cupo_calculado
+                ELSE (0)::numeric                                                                                                                            
+            END), (0)::numeric)) >= ('-15'::integer)::numeric) THEN 'amarillo'::text                                                                         
+            ELSE 'rojo'::text                                                                                                                                
+        END AS semaforo,                                                                                                                                     
+    ( SELECT count(*) AS count                                                                                                                               
+           FROM convocatoria c                                                                                                                               
+                ^                                                                                                                                            
+Try rerunning the command with --debug to troubleshoot the error.

@@ -82,6 +82,63 @@ export const MES_NOMBRE: Record<number, string> = {
   9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
 };
 
+export const MES_NOMBRE_A_NUMERO: Record<string, number> = {
+  enero: 1,
+  febrero: 2,
+  marzo: 3,
+  abril: 4,
+  mayo: 5,
+  junio: 6,
+  julio: 7,
+  agosto: 8,
+  septiembre: 9,
+  setiembre: 9,
+  octubre: 10,
+  noviembre: 11,
+  diciembre: 12,
+};
+
+export function parseMesVisitaPreferido(mes?: string | null) {
+  if (!mes) return null;
+  const normalized = mes
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+  return MES_NOMBRE_A_NUMERO[normalized] || null;
+}
+
+export interface SolicitudPendiente {
+  id: string;
+  agenda_amplia: string | null;
+  cantidad_visitantes: number | null;
+  cargo_institucion: string | null;
+  coeficiente_calculado: number | null;
+  comentarios_observaciones: string | null;
+  created_at: string | null;
+  departamento: string | null;
+  dias_turnos_preferencia: string | null;
+  direccion_email: string | null;
+  disponibilidad_llamados: string | null;
+  email_contacto_coordinador: string | null;
+  email_referente: string | null;
+  estado_actual: string | null;
+  marca_temporal: string | null;
+  mes_visita_preferido: string | null;
+  nombre_coordinador_viaje: string | null;
+  nombre_empresa_organizacion: string | null;
+  nombre_institucion: string | null;
+  nombre_referente: string | null;
+  provincia: string | null;
+  quien_coordina: string | null;
+  rango_etario: string | null;
+  requerimientos_accesibilidad: string | null;
+  telefono_contacto_coordinador: string | null;
+  telefono_institucion: string | null;
+  telefono_referente: string | null;
+  tipo_institucion: string | null;
+}
+
 export interface SeguimientoLlamado {
   id_llamado: number;
   id_asignacion: number;

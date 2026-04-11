@@ -1,13 +1,23 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAsignaciones, useDisponibilidad } from '@/hooks/useVisitas';
 import { DIA_SEMANA, MES_NOMBRE } from '@/lib/types-visitas';
 import type { AsignacionVisita } from '@/lib/types-visitas';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Calendar, Users, Building, Phone, Mail, Sun, Moon } from 'lucide-react';
+import { Calendar, Users, Building, Phone, Mail, Sun, Moon, Pencil, Trash2, Copy } from 'lucide-react';
 import { isToday, isTomorrow, isPast } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { FormModificacion } from './FormModificacion';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export function TablaConfirmados() {
+  const qc = useQueryClient();
+  const [editingAsignacion, setEditingAsignacion] = useState<AsignacionVisita | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const { data: asignaciones = [], isLoading } = useAsignaciones();
   const { data: slots = [] } = useDisponibilidad(new Date().getFullYear());
 
@@ -48,6 +58,72 @@ export function TablaConfirmados() {
   }, [confirmadas, slotMap]);
 
   if (isLoading) return <p className="text-muted-foreground p-4">Cargando...</p>;
+
+  const handleGuardarModificacion = async (formData: Partial<AsignacionVisita>, duplicar: boolean) => {
+    if (!editingAsignacion) return;
+    setSavingEdit(true);
+    try {
+      const updateData = {
+        ...formData,
+        updated_at: new Date().toISOString(),
+      };
+      
+      const { error } = await supabase
+        .from('asignaciones_visita' as any)
+        .update(updateData as any)
+        .eq('id_asignacion', editingAsignacion.id_asignacion);
+
+      if (error) throw error;
+
+      if (duplicar) {
+        const { id_asignacion, created_at, updated_at, ...rest } = editingAsignacion;
+        const insertData = { ...rest, ...formData, estado: 'pendiente', id_plani: null };
+        delete (insertData as any).planificacion;
+        const { error: errorInsert } = await supabase
+          .from('asignaciones_visita' as any)
+          .insert([insertData as any]);
+        
+        if (errorInsert) throw errorInsert;
+        toast.success('Registro duplicado (creado en estado Pendiente)');
+      } else {
+        toast.success('Solicitud modificada correctamente');
+      }
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+      setEditingAsignacion(null);
+    } catch (e: any) {
+      toast.error(e.message || 'Error al guardar modificación');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleEliminar = async (idAsig: number) => {
+    if (!confirm('¿Estás seguro de que querés ELIMINAR definitivamente este turno? Esta acción no se puede deshacer.')) return;
+    try {
+      const { error } = await supabase
+        .from('asignaciones_visita' as any)
+        .delete()
+        .eq('id_asignacion', idAsig);
+      if (error) throw error;
+      toast.success('Turno eliminado permanentemente');
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Error al eliminar');
+    }
+  };
+
+  const handleDuplicate = async (a: AsignacionVisita) => {
+    try {
+      const { id_asignacion, created_at, updated_at, planificacion, ...rest } = a as any;
+      const insertData = { ...rest, estado: 'pendiente', id_plani: null };
+      const { error } = await supabase.from('asignaciones_visita' as any).insert([insertData]);
+      if (error) throw error;
+      toast.success('Turno duplicado (enviado a pendientes)');
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Error al duplicar');
+    }
+  };
 
   if (grouped.size === 0) {
     return <p className="py-8 text-center text-muted-foreground">No hay turnos confirmados o asignados</p>;
@@ -162,7 +238,20 @@ export function TablaConfirmados() {
                               )}
                             </div>
                           </div>
-                          <span className="text-[10px] font-mono text-muted-foreground">#{a.id_asignacion}</span>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <span className="text-[10px] font-mono text-muted-foreground">#{a.id_asignacion}</span>
+                            <div className="flex items-center gap-1">
+                              <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => setEditingAsignacion(a)}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => handleDuplicate(a)}>
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleEliminar(a.id_asignacion)}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -173,6 +262,20 @@ export function TablaConfirmados() {
           </div>
         );
       })}
+
+      <Dialog open={!!editingAsignacion} onOpenChange={(open) => !open && setEditingAsignacion(null)}>
+        <DialogContent className="max-w-3xl border-0 p-0 overflow-hidden bg-transparent shadow-none">
+          {editingAsignacion && (
+             <FormModificacion
+                asignacion={editingAsignacion}
+                onSave={(data) => handleGuardarModificacion(data, false)}
+                onSaveAndDuplicate={(data) => handleGuardarModificacion(data, true)}
+                onCancel={() => setEditingAsignacion(null)}
+                saving={savingEdit}
+             />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

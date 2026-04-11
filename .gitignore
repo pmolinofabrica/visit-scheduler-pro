@@ -23,3 +23,17 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Carpeta temporal de importación desde otro dispositivo
+nuevo/
+
+# Scratch and session logs
+*.txt
+scripts/
+query-test.mjs
+supa-check.ts
+test-update.js
+test-update2.js
+plan-botones-crud.md
+supabase/.temp/
+package-lock.json
