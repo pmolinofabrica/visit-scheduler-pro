@@ -403,24 +403,42 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                 <Button size="sm" variant="outline" className="h-8 text-xs flex-1" onClick={async () => {
                    setSaving(true);
                    try {
-                     // 1. Enviar una copia limpia de vuelta a la tabla solicitudes
-                     const newSol = {
-                       marca_temporal: new Date().toISOString(),
-                       estado_actual: 'pendiente',
-                       nombre_institucion: asignacionViewing.nombre_institucion,
-                       nombre_referente: asignacionViewing.nombre_referente,
-                       email_referente: asignacionViewing.email_referente,
-                       telefono_referente: asignacionViewing.telefono_referente,
-                       telefono_institucion: asignacionViewing.telefono_institucion,
-                       nombre_empresa_organizacion: asignacionViewing.nombre_empresa,
-                       rango_etario: asignacionViewing.rango_etario,
-                       cantidad_visitantes: asignacionViewing.cantidad_personas_original,
-                       comentarios_observaciones: asignacionViewing.observaciones,
-                       coeficiente_calculado: asignacionViewing.coeficiente_aplicado,
-                     };
+                     // 1. Enviar una copia limpia de vuelta a la tabla solicitudes (o actualizar la existente)
+                     const institucion = asignacionViewing.nombre_institucion || 'Sin institución';
+                     const { data: existing, error: errExist } = await supabase
+                       .from('solicitudes' as any)
+                       .select('id')
+                       .ilike('nombre_institucion', institucion.trim())
+                       .limit(1)
+                       .maybeSingle();
+
+                     if (existing) {
+                       // Actualizar el estado de la original a pendiente 
+                       const { error: errUpdate } = await supabase
+                         .from('solicitudes' as any)
+                         .update({ estado_actual: 'pendiente', marca_temporal: new Date().toISOString() })
+                         .eq('id', existing.id);
+                       if (errUpdate) throw errUpdate;
+                     } else {
+                       // Si no existe (fue borrada físicamente), la re-creamos
+                       const newSol = {
+                         marca_temporal: new Date().toISOString(),
+                         estado_actual: 'pendiente',
+                         nombre_institucion: institucion,
+                         nombre_referente: asignacionViewing.nombre_referente,
+                         email_referente: asignacionViewing.email_referente,
+                         telefono_referente: asignacionViewing.telefono_referente,
+                         telefono_institucion: asignacionViewing.telefono_institucion,
+                         nombre_empresa_organizacion: asignacionViewing.nombre_empresa,
+                         rango_etario: asignacionViewing.rango_etario,
+                         cantidad_visitantes: asignacionViewing.cantidad_personas_original,
+                         comentarios_observaciones: asignacionViewing.observaciones,
+                         coeficiente_calculado: asignacionViewing.coeficiente_aplicado,
+                       };
+                       const { error: errInsert } = await supabase.from('solicitudes' as any).insert([newSol as any]);
+                       if (errInsert) throw errInsert;
+                     }
                      
-                     const { error: errInsert } = await supabase.from('solicitudes' as any).insert([newSol as any]);
-                     if (errInsert) throw errInsert;
                      
                      // 2. Eliminar la asignación porque ya no es más una asignación confirmada o en_espera
                      const { error } = await supabase.from('asignaciones_visita' as any)
