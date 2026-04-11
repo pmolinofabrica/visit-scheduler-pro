@@ -404,15 +404,22 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                    setSaving(true);
                    try {
                      // 1. Enviar una copia limpia de vuelta a la tabla solicitudes
-                     // Ignoramos id_asignacion, id_visita, etc
-                     const { id_asignacion, created_at, updated_at, planificacion, id_plani, ...rest } = asignacionViewing;
-                     const insertData = { 
-                       ...rest, 
-                       estado_actual: 'pendiente', 
-                       marca_temporal: new Date().toISOString() 
+                     const newSol = {
+                       marca_temporal: new Date().toISOString(),
+                       estado_actual: 'pendiente',
+                       nombre_institucion: asignacionViewing.nombre_institucion,
+                       nombre_referente: asignacionViewing.nombre_referente,
+                       email_referente: asignacionViewing.email_referente,
+                       telefono_referente: asignacionViewing.telefono_referente,
+                       telefono_institucion: asignacionViewing.telefono_institucion,
+                       nombre_empresa_organizacion: asignacionViewing.nombre_empresa,
+                       rango_etario: asignacionViewing.rango_etario,
+                       cantidad_visitantes: asignacionViewing.cantidad_personas_original,
+                       comentarios_observaciones: asignacionViewing.observaciones,
+                       coeficiente_calculado: asignacionViewing.coeficiente_aplicado,
                      };
                      
-                     const { error: errInsert } = await supabase.from('solicitudes' as any).insert([insertData as any]);
+                     const { error: errInsert } = await supabase.from('solicitudes' as any).insert([newSol as any]);
                      if (errInsert) throw errInsert;
                      
                      // 2. Eliminar la asignación porque ya no es más una asignación confirmada o en_espera

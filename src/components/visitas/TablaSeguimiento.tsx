@@ -174,21 +174,27 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolic
       if (error) throw error;
 
       if (duplicar) {
-        const { id_asignacion, created_at, updated_at, planificacion, id_plani, id_visita, estado, agente_asigno, ...rest } = asignacion as any;
         const baseName = formData.nombre_institucion || updateData.nombre_institucion || 'Sin institución';
         const randomId = Math.floor(Math.random() * 1000);
         
-        const insertData = { 
-          ...rest, 
-          ...formData,
+        const newSol = {
+          marca_temporal: new Date().toISOString(),
+          estado_actual: 'pendiente',
           nombre_institucion: `${baseName} (Copia #${randomId})`,
-          estado_actual: 'pendiente', 
-          marca_temporal: new Date().toISOString() 
+          nombre_referente: formData.nombre_referente ?? asignacion.nombre_referente,
+          email_referente: formData.email_referente ?? asignacion.email_referente,
+          telefono_referente: formData.telefono_referente ?? asignacion.telefono_referente,
+          telefono_institucion: formData.telefono_institucion ?? asignacion.telefono_institucion,
+          nombre_empresa_organizacion: formData.nombre_empresa ?? asignacion.nombre_empresa,
+          rango_etario: formData.rango_etario ?? asignacion.rango_etario,
+          cantidad_visitantes: formData.cantidad_personas_original ?? asignacion.cantidad_personas_original,
+          comentarios_observaciones: formData.observaciones ?? asignacion.observaciones,
+          coeficiente_calculado: formData.coeficiente_aplicado ?? asignacion.coeficiente_aplicado,
         };
         
         const { error: errorInsert } = await supabase
           .from('solicitudes' as any)
-          .insert([insertData as any]);
+          .insert([newSol as any]);
         
         if (errorInsert) throw errorInsert;
         toast.success('Registro editado y duplicado (creado en estado Pendiente)');
@@ -224,10 +230,23 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolic
 
   const handleDuplicate = async () => {
     try {
-      const { id_asignacion, created_at, updated_at, planificacion, id_plani, id_visita, estado, agente_asigno, ...rest } = asignacion as any;
-      const insertData = { ...rest, estado_actual: 'pendiente', marca_temporal: new Date().toISOString() };
+      const randomId = Math.floor(Math.random() * 1000);
+      const newSol = {
+        marca_temporal: new Date().toISOString(),
+        estado_actual: 'pendiente',
+        nombre_institucion: `${asignacion.nombre_institucion || 'Sin institución'} (Copia #${randomId})`,
+        nombre_referente: asignacion.nombre_referente,
+        email_referente: asignacion.email_referente,
+        telefono_referente: asignacion.telefono_referente,
+        telefono_institucion: asignacion.telefono_institucion,
+        nombre_empresa_organizacion: asignacion.nombre_empresa,
+        rango_etario: asignacion.rango_etario,
+        cantidad_visitantes: asignacion.cantidad_personas_original,
+        comentarios_observaciones: asignacion.observaciones,
+        coeficiente_calculado: asignacion.coeficiente_aplicado,
+      };
       
-      const { error } = await supabase.from('solicitudes' as any).insert([insertData]);
+      const { error } = await supabase.from('solicitudes' as any).insert([newSol as any]);
       if (error) throw error;
       
       toast.success('Turno duplicado (enviado a lista de pendientes)');
