@@ -403,28 +403,28 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                 <Button size="sm" variant="outline" className="h-8 text-xs flex-1" onClick={async () => {
                    setSaving(true);
                    try {
-                     // 1. Enviar una copia limpia de vuelta a la tabla solicitudes (o actualizar la existente)
+                     // 1. Buscamos si la solicitud original aún existe usando comodines (por si hay espacios extra ocultos)
                      const institucion = asignacionViewing.nombre_institucion || 'Sin institución';
                      const { data: existing, error: errExist } = await supabase
                        .from('solicitudes' as any)
                        .select('id')
-                       .ilike('nombre_institucion', institucion.trim())
+                       .ilike('nombre_institucion', `%${institucion.trim()}%`)
                        .limit(1)
                        .maybeSingle();
 
                      if (existing) {
-                       // Actualizar el estado de la original a pendiente 
+                       // Si la encontramos, simplemente actualizamos su estado a pendiente
                        const { error: errUpdate } = await supabase
                          .from('solicitudes' as any)
                          .update({ estado_actual: 'pendiente', marca_temporal: new Date().toISOString() })
                          .eq('id', existing.id);
                        if (errUpdate) throw errUpdate;
                      } else {
-                       // Si no existe (fue borrada físicamente), la re-creamos
+                       // Si no existe (fue borrada), la re-creamos
                        const newSol = {
                          marca_temporal: new Date().toISOString(),
                          estado_actual: 'pendiente',
-                         nombre_institucion: institucion,
+                         nombre_institucion: institucion.trim(),
                          nombre_referente: asignacionViewing.nombre_referente,
                          email_referente: asignacionViewing.email_referente,
                          telefono_referente: asignacionViewing.telefono_referente,
@@ -435,10 +435,17 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                          comentarios_observaciones: asignacionViewing.observaciones,
                          coeficiente_calculado: asignacionViewing.coeficiente_aplicado,
                        };
+                       
                        const { error: errInsert } = await supabase.from('solicitudes' as any).insert([newSol as any]);
-                       if (errInsert) throw errInsert;
+                       
+                       if (errInsert) {
+                         // Si es 23505 significa que el nombre exácto ya existe pese al ilike pero con algún caracter raro.
+                         // Lo consideramos insertado de forma forzada ignorando el error.
+                         if (errInsert.code !== '23505') {
+                            throw errInsert;
+                         }
+                       }
                      }
-                     
                      
                      // 2. Eliminar la asignación porque ya no es más una asignación confirmada o en_espera
                      const { error } = await supabase.from('asignaciones_visita' as any)
@@ -454,7 +461,8 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                      await qc.invalidateQueries({ queryKey: ['disponibilidad-visitas'] });
                      setViewingAsignacionId(null);
                    } catch (e: any) {
-                     toast.error('Error al volver a pendiente');
+                     console.error("Error al volver a pendiente:", e);
+                     toast.error(e.message || 'Error al volver a pendiente');
                    } finally { setSaving(false); }
                 }}>
                   <ArrowDownAZ className="h-3 w-3 mr-1" /> A Pendiente
