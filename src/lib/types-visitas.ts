@@ -141,7 +141,8 @@ export interface SolicitudPendiente {
 
 export interface SeguimientoLlamado {
   id_llamado: number;
-  id_asignacion: number;
+  id_asignacion?: number | null;
+  id_solicitud?: string | null;
   fecha_hora: string;
   agente: string | null;
   atendio: boolean | null;

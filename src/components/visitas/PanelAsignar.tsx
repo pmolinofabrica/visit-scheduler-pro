@@ -120,7 +120,7 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
       toast.error('Seleccioná una solicitud de la lista');
       return;
     }
-    if (!selectedPlani && estado !== 'cancelado' && estado !== 'duplicado') {
+    if (selectedPlani === null && estado !== 'cancelado' && estado !== 'duplicado') {
       toast.error('Seleccioná un turno del calendario');
       return;
     }

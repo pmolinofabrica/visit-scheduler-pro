@@ -11,11 +11,12 @@ import { toast } from 'sonner';
 const AGENTES = ['Pablo', 'Vanesa', 'Celina', 'Eugenia', 'Eliana'];
 
 interface Props {
-  idAsignacion: number;
+  idAsignacion?: number | null;
+  idSolicitud?: string | null;
 }
 
-export function SeguimientoLlamados({ idAsignacion }: Props) {
-  const { data: llamados = [], isLoading } = useSeguimientoLlamados(idAsignacion);
+export function SeguimientoLlamados({ idAsignacion, idSolicitud }: Props) {
+  const { data: llamados = [], isLoading } = useSeguimientoLlamados(idAsignacion, idSolicitud);
   const { mutateAsync: crearLlamado, isPending } = useCrearSeguimientoLlamado();
 
   const [agente, setAgente] = useState('Pablo');
@@ -46,13 +47,17 @@ export function SeguimientoLlamados({ idAsignacion }: Props) {
       const timeStr = format(new Date(), 'HH:mm:ss');
       const dateObj = new Date(`${year}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}T${timeStr}`);
 
-      await crearLlamado({
-        id_asignacion: idAsignacion,
+      const payload: Partial<any> = {
         agente,
         atendio,
         observaciones: observacionesLlamado || null,
         fecha_hora: dateObj.toISOString(),
-      });
+      };
+      
+      if (idAsignacion) Object.assign(payload, { id_asignacion: idAsignacion });
+      else if (idSolicitud) Object.assign(payload, { id_solicitud: idSolicitud });
+
+      await crearLlamado(payload);
       setAtendio(false);
       setObservacionesLlamado('');
       setDiaMes(format(new Date(), 'dd/MM'));
@@ -98,7 +103,7 @@ export function SeguimientoLlamados({ idAsignacion }: Props) {
               <label key={a} className="flex items-center gap-1 text-xs cursor-pointer">
                 <input
                   type="radio"
-                  name={`agente-${idAsignacion}`}
+                  name={`agente-${idAsignacion || idSolicitud}`}
                   checked={agente === a}
                   onChange={() => setAgente(a)}
                   className="accent-primary h-3 w-3"
@@ -117,8 +122,8 @@ export function SeguimientoLlamados({ idAsignacion }: Props) {
               onChange={e => setDiaMes(e.target.value)}
             />
             <div className="flex items-center gap-1.5 shrink-0 bg-background/50 border rounded-md px-2 h-7">
-              <Checkbox id={`atendio-${idAsignacion}`} checked={atendio} onCheckedChange={(c) => setAtendio(!!c)} />
-              <Label htmlFor={`atendio-${idAsignacion}`} className="text-xs cursor-pointer font-medium">Atendió</Label>
+              <Checkbox id={`atendio-${idAsignacion || idSolicitud}`} checked={atendio} onCheckedChange={(c) => setAtendio(!!c)} />
+              <Label htmlFor={`atendio-${idAsignacion || idSolicitud}`} className="text-xs cursor-pointer font-medium">Atendió</Label>
             </div>
           </div>
 

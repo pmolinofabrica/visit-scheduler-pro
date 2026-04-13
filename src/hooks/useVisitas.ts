@@ -187,20 +187,24 @@ export function useActualizarEstado() {
   });
 }
 
-export function useSeguimientoLlamados(id_asignacion?: number | null) {
+export function useSeguimientoLlamados(id_asignacion?: number | null, id_solicitud?: string | null) {
   return useQuery({
-    queryKey: ['seguimiento-llamados', id_asignacion],
+    queryKey: ['seguimiento-llamados', id_asignacion, id_solicitud],
     queryFn: async () => {
-      if (!id_asignacion) return [];
-      const { data, error } = await supabase
-        .from('seguimiento_llamados_visita' as any)
-        .select('*')
-        .eq('id_asignacion', id_asignacion)
-        .order('fecha_hora', { ascending: true });
+      if (!id_asignacion && !id_solicitud) return [];
+      const query = supabase.from('seguimiento_llamados_visita' as any).select('*').order('fecha_hora', { ascending: true });
+      
+      if (id_asignacion) {
+        query.eq('id_asignacion', id_asignacion);
+      } else if (id_solicitud) {
+        query.eq('id_solicitud', id_solicitud);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as unknown as SeguimientoLlamado[];
     },
-    enabled: !!id_asignacion,
+    enabled: !!id_asignacion || !!id_solicitud,
   });
 }
 
@@ -217,7 +221,10 @@ export function useCrearSeguimientoLlamado() {
       return data;
     },
     onSuccess: (_, variables) => {
-      qc.invalidateQueries({ queryKey: ['seguimiento-llamados', variables.id_asignacion] });
+      qc.invalidateQueries({ queryKey: ['seguimiento-llamados', variables.id_asignacion, variables.id_solicitud] });
+      // Invalidate general ones to refresh counts
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+      qc.invalidateQueries({ queryKey: ['solicitudes-pendientes'] });
     },
   });
 }

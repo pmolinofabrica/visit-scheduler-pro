@@ -259,12 +259,19 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolic
 
   const handleAddLlamado = async () => {
     try {
-      await crearLlamado.mutateAsync({
-        id_asignacion: asignacion.id_asignacion,
+      const payload: Partial<any> = {
         atendio: newAtendio,
         observaciones: newObs || null,
         agente: null,
-      });
+      };
+
+      if ((asignacion as any)._isSolicitudPendiente) {
+        payload.id_solicitud = asignacion.id_asignacion; // id_asignacion contains the UUID for raw requests due to the mapped type interface.
+      } else {
+        payload.id_asignacion = asignacion.id_asignacion;
+      }
+      
+      await crearLlamado.mutateAsync(payload as any);
       setNewObs('');
       setNewAtendio(false);
       toast.success('Llamado registrado');
@@ -399,31 +406,30 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolic
         <p className="text-xs text-muted-foreground italic">Sin acciones registradas</p>
       )}
 
-      {!isCruda && (
-        <div className="flex gap-2 items-end border-t pt-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Observación del llamado..."
-              value={newObs}
-              onChange={e => setNewObs(e.target.value)}
-              className="h-8 text-xs"
-            />
-          </div>
-          <Button
-            size="sm"
-            variant={newAtendio ? 'default' : 'outline'}
+      {/* Llamados - Siempre visible */}
+      <div className="flex gap-2 items-end border-t pt-3">
+        <div className="flex-1">
+          <Input
+            placeholder="Observación del llamado..."
+            value={newObs}
+            onChange={e => setNewObs(e.target.value)}
             className="h-8 text-xs"
-            onClick={() => setNewAtendio(!newAtendio)}
-          >
-            {newAtendio ? '✅ Atendió' : '❌ No atendió'}
-          </Button>
-          <Button size="sm" className="h-8 text-xs" onClick={handleAddLlamado} disabled={crearLlamado.isPending}>
-            <Plus className="h-3 w-3 mr-1" /> Llamado
-          </Button>
+          />
         </div>
-      )}
+        <Button
+          size="sm"
+          variant={newAtendio ? 'default' : 'outline'}
+          className="h-8 text-xs"
+          onClick={() => setNewAtendio(!newAtendio)}
+        >
+          {newAtendio ? '✅ Atendió' : '❌ No atendió'}
+        </Button>
+        <Button size="sm" className="h-8 text-xs" onClick={handleAddLlamado} disabled={crearLlamado.isPending}>
+          <Plus className="h-3 w-3 mr-1" /> Llamado
+        </Button>
+      </div>
 
-      {/* Email actions */}
+      {/* Email actions - Solo para asignados/confirmados */}
       {!isCruda && (
         <div className="border-t pt-3 space-y-2">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
@@ -503,6 +509,37 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolic
         )}
       </div>
     </div>
+  );
+}
+
+function TrackingCard({ a, slot, isOpen, onToggle }: { a: any; slot: any; isOpen: boolean; onToggle: () => void }) {
+                <MailCheck className="h-3 w-3" /> Asignación Env.
+              </Badge>
+            )}
+            {enviosConfirmacion && (
+              <Badge variant="outline" className="bg-semaforo-verde/10 text-semaforo-verde border-semaforo-verde/30 flex items-center gap-1 text-[10px] px-1.5 font-bold">
+                <MailCheck className="h-3 w-3" /> Conf. Env.
+              </Badge>
+            )}
+          </div>
+
+          {slot && (
+            <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline border-r pr-3 mr-1">
+              {new Date(slot.fecha + 'T12:00:00').toLocaleDateString('es-AR')} · <span className="text-[10px] uppercase font-bold">{slot.tipo_turno}</span>
+            </span>
+          )}
+          <Badge className={cn('text-[10px] shrink-0', estadoColor[a.estado])}>
+            {ESTADO_LABELS[a.estado as keyof typeof ESTADO_LABELS]}
+          </Badge>
+          <span className="text-xs font-mono text-muted-foreground truncate max-w-[50px] shrink-0 text-right">
+            #{typeof a.id_asignacion === 'string' ? 'F' : a.id_asignacion}
+          </span>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <LogRow asignacion={a} slot={slot} />
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -607,38 +644,7 @@ export function TablaSeguimiento({ estadosFiltrados = [] }: Props) {
           const slot = a.id_plani ? slotMap[a.id_plani] : null;
           const isOpen = expandedId === a.id_asignacion;
 
-          return (
-            <Collapsible key={a.id_asignacion} open={isOpen} onOpenChange={open => setExpandedId(open ? a.id_asignacion : null)}>
-              <CollapsibleTrigger asChild>
-                <button
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg border transition-colors text-sm',
-                    isOpen ? 'bg-card shadow-sm border-primary/30' : 'bg-card/50 hover:bg-card border-border/50'
-                  )}
-                >
-                  <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform text-muted-foreground', isOpen && 'rotate-180')} />
-                  <div className="flex-1 min-w-0 flex items-center gap-3">
-                    <span className="font-semibold truncate">{a.nombre_institucion || 'Sin nombre'}</span>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">{a.nombre_referente}</span>
-                  </div>
-                  {slot && (
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {new Date(slot.fecha + 'T12:00:00').toLocaleDateString('es-AR')} · {slot.tipo_turno}
-                    </span>
-                  )}
-                  <Badge className={cn('text-[10px] shrink-0', estadoColor[a.estado])}>
-                    {ESTADO_LABELS[a.estado as keyof typeof ESTADO_LABELS]}
-                  </Badge>
-                  <span className="text-xs font-mono text-muted-foreground truncate max-w-[60px]" title={a.id_asignacion.toString()}>
-                    #{typeof a.id_asignacion === 'string' ? 'F' : a.id_asignacion}
-                  </span>
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <LogRow asignacion={a} slot={slot} />
-              </CollapsibleContent>
-            </Collapsible>
-          );
+          return <TrackingCard key={a.id_asignacion} a={a} slot={slot} isOpen={isOpen} onToggle={() => setExpandedId(isOpen ? null : a.id_asignacion)} />;
         })}
         {filtradas.length === 0 && (
           <p className="py-8 text-center text-muted-foreground">No hay asignaciones para mostrar</p>
