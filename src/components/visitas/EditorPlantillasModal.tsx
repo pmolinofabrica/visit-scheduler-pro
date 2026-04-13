@@ -44,8 +44,8 @@ export function EditorPlantillasModal() {
       }
       toast.success('Plantilla actualizada correctamente');
       setOpen(false);
-    } catch {
-      toast.error('Error al guardar plantilla');
+    } catch (e: any) {
+      toast.error(e.message || JSON.stringify(e) || 'Error al guardar plantilla');
     }
   };
 
@@ -80,8 +80,10 @@ export function EditorPlantillasModal() {
               <p>{"{{institucion}}"} - Nombre de la escuela/grupo</p>
               <p>{"{{referente}}"} - Nombre del responsable del grupo</p>
               <p>{"{{fecha}}"} - Fecha asignada (DD/MM/YYYY)</p>
-              <p>{"{{turno}}"} - Turno (Mañana o Tarde)</p>
+              <p>{"{{turno}}"} - Tipo de turno (Mañana o Tarde)</p>
+              <p>{"{{horario}}"} - Horas reales (09:00 a 11:00 hs / 14:00 a 16:00 hs)</p>
               <p>{"{{visitantes}}"} - Cantidad de asistentes</p>
+              <p>{"{{edades}}"} - Rango etario del grupo</p>
             </div>
 
             <div className="space-y-2">

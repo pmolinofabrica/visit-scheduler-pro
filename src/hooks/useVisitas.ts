@@ -254,7 +254,7 @@ export function useUpdatePlantillaCorreo() {
     mutationFn: async (plantilla: PlantillaCorreo) => {
       const { data, error } = await supabase
         .from('config_plantillas_correo' as any)
-        .upsert(plantilla as any)
+        .upsert(plantilla as any, { onConflict: 'tipo_correo' })
         .select()
         .single();
       if (error) throw error;

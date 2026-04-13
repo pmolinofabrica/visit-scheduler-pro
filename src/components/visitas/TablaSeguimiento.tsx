@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { useAsignaciones, useDisponibilidad, useSeguimientoLlamados, useCrearSeguimientoLlamado, useSolicitudesPendientes, usePlantillasCorreo } from '@/hooks/useVisitas';
 import { ESTADO_LABELS, MES_NOMBRE } from '@/lib/types-visitas';
 import type { AsignacionVisita } from '@/lib/types-visitas';
@@ -97,11 +98,18 @@ function parseTemplate(template: { asunto: string; cuerpo: string } | undefined,
   const institucion = a.nombre_institucion || 'Institución';
   const referente = a.nombre_referente || 'Referente';
   const visitantes = a.cantidad_personas_original?.toString() || '0';
+  const edades = a.rango_etario || '[EDADES]';
+  
+  const horario = turno.toLowerCase().includes('mañana') 
+    ? '09:00 a 11:00 hs' 
+    : turno.toLowerCase().includes('tarde') 
+      ? '14:00 a 16:00 hs' 
+      : '[HORARIO]';
 
   if (!template) {
     return {
       asunto: `${tipo === 'asignacion' ? 'Visita confirmada' : 'Confirmación de visita'} - ${institucion} - ${fecha}`,
-      cuerpo: `Estimado/a ${referente},\n\nTenemos el agrado de indicarle que su solicitud está procesada.\n\n📅 Fecha asignada: ${fecha}\n🕐 Turno: ${turno}\n👥 Cantidad de personas: ${visitantes}\n🏫 Institución: ${institucion}\n\nPara confirmar la asistencia responda a este mail.\n\nSaludos cordiales.`
+      cuerpo: `Estimado/a ${referente},\n\nTenemos el agrado de indicarle que su solicitud está procesada.\n\n📅 Fecha asignada: ${fecha}\n🕐 Horario: ${horario}\n👥 Cantidad de personas: ${visitantes}\n👦 Edades: ${edades}\n🏫 Institución: ${institucion}\n\nPara confirmar la asistencia responda a este mail.\n\nSaludos cordiales.`
     };
   }
 
@@ -110,7 +118,9 @@ function parseTemplate(template: { asunto: string; cuerpo: string } | undefined,
     .replace(/\{\{referente\}\}/g, referente)
     .replace(/\{\{fecha\}\}/g, fecha)
     .replace(/\{\{turno\}\}/g, turno)
-    .replace(/\{\{visitantes\}\}/g, visitantes);
+    .replace(/\{\{horario\}\}/g, horario)
+    .replace(/\{\{visitantes\}\}/g, visitantes)
+    .replace(/\{\{edades\}\}/g, edades);
 
   return {
     asunto: replaceVars(template.asunto),
