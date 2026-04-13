@@ -228,3 +228,40 @@ export function useCrearSeguimientoLlamado() {
     },
   });
 }
+
+export interface PlantillaCorreo {
+  tipo_correo: string;
+  asunto: string;
+  cuerpo: string;
+}
+
+export function usePlantillasCorreo() {
+  return useQuery({
+    queryKey: ['plantillas-correo'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('config_plantillas_correo' as any)
+        .select('*');
+      if (error) throw error;
+      return (data || []) as PlantillaCorreo[];
+    },
+  });
+}
+
+export function useUpdatePlantillaCorreo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (plantilla: PlantillaCorreo) => {
+      const { data, error } = await supabase
+        .from('config_plantillas_correo' as any)
+        .upsert(plantilla as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plantillas-correo'] });
+    },
+  });
+}

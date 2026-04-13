@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { useAsignaciones, useDisponibilidad, useSeguimientoLlamados, useCrearSeguimientoLlamado, useSolicitudesPendientes } from '@/hooks/useVisitas';
+import { useAsignaciones, useDisponibilidad, useSeguimientoLlamados, useCrearSeguimientoLlamado, useSolicitudesPendientes, usePlantillasCorreo } from '@/hooks/useVisitas';
 import { ESTADO_LABELS, MES_NOMBRE } from '@/lib/types-visitas';
 import type { AsignacionVisita } from '@/lib/types-visitas';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormModificacion } from './FormModificacion';
 import { Pencil, Trash2, Copy } from 'lucide-react';
+import { EditorPlantillasModal } from './EditorPlantillasModal';
 
 interface Props {
   estadosFiltrados?: string[];
@@ -91,49 +91,30 @@ function useCorreos(id_asignacion: number | null) {
 }
 
 // Email templates
-function generarPlantillaAsignacion(a: AsignacionVisita, slot: any) {
+function parseTemplate(template: { asunto: string; cuerpo: string } | undefined, a: AsignacionVisita, slot: any, tipo: 'asignacion' | 'confirmacion') {
   const fecha = slot ? new Date(slot.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '[FECHA]';
   const turno = slot?.tipo_turno || '[TURNO]';
+  const institucion = a.nombre_institucion || 'Institución';
+  const referente = a.nombre_referente || 'Referente';
+  const visitantes = a.cantidad_personas_original?.toString() || '0';
+
+  if (!template) {
+    return {
+      asunto: `${tipo === 'asignacion' ? 'Visita confirmada' : 'Confirmación de visita'} - ${institucion} - ${fecha}`,
+      cuerpo: `Estimado/a ${referente},\n\nTenemos el agrado de indicarle que su solicitud está procesada.\n\n📅 Fecha asignada: ${fecha}\n🕐 Turno: ${turno}\n👥 Cantidad de personas: ${visitantes}\n🏫 Institución: ${institucion}\n\nPara confirmar la asistencia responda a este mail.\n\nSaludos cordiales.`
+    };
+  }
+
+  const replaceVars = (str: string) => str
+    .replace(/\{\{institucion\}\}/g, institucion)
+    .replace(/\{\{referente\}\}/g, referente)
+    .replace(/\{\{fecha\}\}/g, fecha)
+    .replace(/\{\{turno\}\}/g, turno)
+    .replace(/\{\{visitantes\}\}/g, visitantes);
+
   return {
-    asunto: `Visita confirmada - ${a.nombre_institucion || 'Institución'} - ${fecha}`,
-    cuerpo: `Estimado/a ${a.nombre_referente || '[Referente]'},
-
-Nos dirigimos a usted para confirmar la asignación de turno para la visita grupal de ${a.nombre_institucion || '[Institución]'}.
-
-📅 Fecha: ${fecha}
-🕐 Turno: ${turno}
-👥 Cantidad de personas: ${a.cantidad_personas_original}
-
-Le solicitamos que confirme la asistencia respondiendo a este correo.
-
-Quedamos a disposición para cualquier consulta.
-
-Saludos cordiales.`,
-  };
-}
-
-function generarPlantillaConfirmacion(a: AsignacionVisita, slot: any) {
-  const fecha = slot ? new Date(slot.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '[FECHA]';
-  const turno = slot?.tipo_turno || '[TURNO]';
-  return {
-    asunto: `Confirmación de visita - ${a.nombre_institucion || 'Institución'} - ${fecha}`,
-    cuerpo: `Estimado/a ${a.nombre_referente || '[Referente]'},
-
-Confirmamos su visita grupal a nuestras instalaciones con los siguientes datos:
-
-📅 Fecha: ${fecha}
-🕐 Turno: ${turno}
-👥 Cantidad de personas: ${a.cantidad_personas_original}
-🏫 Institución: ${a.nombre_institucion || ''}
-
-Recomendaciones:
-- Llegar con 15 minutos de antelación
-- Traer listado de asistentes
-- Coordinar con el referente ante cualquier cambio
-
-Ante cualquier inconveniente, comunicarse con antelación.
-
-Saludos cordiales.`,
+    asunto: replaceVars(template.asunto),
+    cuerpo: replaceVars(template.cuerpo),
   };
 }
 
@@ -144,6 +125,7 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolic
   const { data: llamados = [] } = useSeguimientoLlamados(idAsigSafe);
   const { data: historial = [] } = useHistorial(idAsigSafe);
   const { data: correos = [] } = useCorreos(idAsigSafe);
+  const { data: plantillas = [] } = usePlantillasCorreo();
   const crearLlamado = useCrearSeguimientoLlamado();
   const qc = useQueryClient();
   
@@ -282,11 +264,10 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolic
 
   const handlePrepareEmail = (tipo: 'asignacion' | 'confirmacion') => {
     setEmailType(tipo);
-    const template = tipo === 'asignacion' 
-      ? generarPlantillaAsignacion(asignacion, slot) 
-      : generarPlantillaConfirmacion(asignacion, slot);
-    setEmailAsunto(template.asunto);
-    setEmailCuerpo(template.cuerpo);
+    const rawTemplate = plantillas.find(p => p.tipo_correo === tipo);
+    const parsed = parseTemplate(rawTemplate, asignacion, slot, tipo);
+    setEmailAsunto(parsed.asunto);
+    setEmailCuerpo(parsed.cuerpo);
     setShowEmailForm(true);
   };
 
@@ -513,6 +494,32 @@ function LogRow({ asignacion, slot }: { asignacion: AsignacionVisita & { isSolic
 }
 
 function TrackingCard({ a, slot, isOpen, onToggle }: { a: any; slot: any; isOpen: boolean; onToggle: () => void }) {
+  const isCruda = a.isSolicitudCruda;
+  const idAsigSafe = isCruda ? null : a.id_asignacion;
+  const { data: correos = [] } = useCorreos(idAsigSafe);
+  
+  const enviosAsignacion = correos.filter(c => c.tipo_correo === 'asignacion' && c.estado_envio === 'enviado').length > 0;
+  const enviosConfirmacion = correos.filter(c => c.tipo_correo === 'confirmacion' && c.estado_envio === 'enviado').length > 0;
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={onToggle}>
+      <CollapsibleTrigger asChild>
+        <button
+          className={cn(
+            'w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg border transition-colors text-sm',
+            isOpen ? 'bg-card shadow-sm border-primary/30' : 'bg-card/50 hover:bg-card border-border/50'
+          )}
+        >
+          <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform text-muted-foreground', isOpen && 'rotate-180')} />
+          <div className="flex-1 min-w-0 flex items-center gap-3">
+            <span className="font-semibold truncate">{a.nombre_institucion || 'Sin nombre'}</span>
+            <span className="text-xs text-muted-foreground hidden lg:inline">{a.nombre_referente}</span>
+          </div>
+          
+          {/* Badge Visuales de Emails */}
+          <div className="flex gap-1 shrink-0 ml-auto mr-2">
+            {enviosAsignacion && (
+              <Badge variant="outline" className="bg-semaforo-verde/10 text-semaforo-verde border-semaforo-verde/30 flex items-center gap-1 text-[10px] px-1.5 font-bold">
                 <MailCheck className="h-3 w-3" /> Asignación Env.
               </Badge>
             )}
@@ -628,6 +635,9 @@ export function TablaSeguimiento({ estadosFiltrados = [] }: Props) {
               {e === 'todos' ? 'Todos' : e === 'multiple' ? 'Múltiples Visitas' : ESTADO_LABELS[e]}
             </Button>
           ))}
+          <div className="ml-auto flex items-center">
+             <EditorPlantillasModal />
+          </div>
         </div>
         <div className="w-full sm:w-64">
            <Input
