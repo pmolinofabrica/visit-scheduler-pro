@@ -21,6 +21,161 @@ function isSolicitudActiva(row: SolicitudPendiente) {
   return new Date(marca) >= SOLICITUDES_ACTIVE_FROM;
 }
 
+const SOLICITUD_MATCH_MIN_SCORE = 60;
+const SOLICITUD_MATCH_MIN_MARGIN = 10;
+
+function normalizeComparableText(value?: string | null) {
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeComparablePhone(value?: string | null) {
+  return (value || '').replace(/\D/g, '');
+}
+
+function scoreSolicitudCandidate(candidate: SolicitudPendiente, asignacion: Partial<AsignacionVisita>) {
+  let score = 0;
+
+  const institucionAsignacion = normalizeComparableText(asignacion.nombre_institucion);
+  const institucionSolicitud = normalizeComparableText(candidate.nombre_institucion);
+  if (institucionAsignacion && institucionSolicitud) {
+    if (institucionAsignacion === institucionSolicitud) score += 35;
+    else if (
+      institucionSolicitud.includes(institucionAsignacion) ||
+      institucionAsignacion.includes(institucionSolicitud)
+    ) score += 15;
+  }
+
+  const referenteAsignacion = normalizeComparableText(asignacion.nombre_referente);
+  const referenteSolicitud = normalizeComparableText(candidate.nombre_referente);
+  if (referenteAsignacion && referenteSolicitud) {
+    if (referenteAsignacion === referenteSolicitud) score += 25;
+    else if (
+      referenteSolicitud.includes(referenteAsignacion) ||
+      referenteAsignacion.includes(referenteSolicitud)
+    ) score += 10;
+  }
+
+  const emailAsignacion = normalizeComparableText(asignacion.email_referente);
+  const emailSolicitud = normalizeComparableText(candidate.email_referente);
+  if (emailAsignacion && emailSolicitud && emailAsignacion === emailSolicitud) {
+    score += 35;
+  }
+
+  const telReferenteAsignacion = normalizeComparablePhone(asignacion.telefono_referente);
+  const telReferenteSolicitud = normalizeComparablePhone(candidate.telefono_referente);
+  if (telReferenteAsignacion && telReferenteSolicitud && telReferenteAsignacion === telReferenteSolicitud) {
+    score += 30;
+  }
+
+  const telInstitucionAsignacion = normalizeComparablePhone(asignacion.telefono_institucion);
+  const telInstitucionSolicitud = normalizeComparablePhone(candidate.telefono_institucion);
+  if (telInstitucionAsignacion && telInstitucionSolicitud && telInstitucionAsignacion === telInstitucionSolicitud) {
+    score += 20;
+  }
+
+  const empresaAsignacion = normalizeComparableText(asignacion.nombre_empresa);
+  const empresaSolicitud = normalizeComparableText(candidate.nombre_empresa_organizacion);
+  if (empresaAsignacion && empresaSolicitud && empresaAsignacion === empresaSolicitud) {
+    score += 10;
+  }
+
+  const rangoAsignacion = normalizeComparableText(asignacion.rango_etario);
+  const rangoSolicitud = normalizeComparableText(candidate.rango_etario);
+  if (rangoAsignacion && rangoSolicitud && rangoAsignacion === rangoSolicitud) {
+    score += 10;
+  }
+
+  if (
+    typeof candidate.cantidad_visitantes === 'number' &&
+    typeof asignacion.cantidad_personas_original === 'number' &&
+    candidate.cantidad_visitantes === asignacion.cantidad_personas_original
+  ) {
+    score += 15;
+  }
+
+  if (normalizeComparableText(candidate.estado_actual) !== 'pendiente') {
+    score += 5;
+  }
+
+  return score;
+}
+
+function pickSolicitudCandidate(candidates: SolicitudPendiente[], asignacion: Partial<AsignacionVisita>) {
+  const ranked = candidates
+    .map((candidate) => ({
+      candidate,
+      score: scoreSolicitudCandidate(candidate, asignacion),
+      timestamp: new Date(candidate.marca_temporal || candidate.created_at || 0).getTime(),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || b.timestamp - a.timestamp);
+
+  const best = ranked[0];
+  const second = ranked[1];
+  if (!best || best.score < SOLICITUD_MATCH_MIN_SCORE) return null;
+  if (second && best.score - second.score < SOLICITUD_MATCH_MIN_MARGIN) return null;
+  return best.candidate;
+}
+
+function mapAsignacionEstadoToSolicitudEstado(estado: string) {
+  switch (estado) {
+    case 'pendiente':
+      return 'pendiente';
+    case 'cancelado':
+      return 'Cancelado';
+    case 'confirmado':
+      return 'Confirmado';
+    case 'en_espera':
+      return 'En espera';
+    case 'duplicado':
+      return 'Duplicado';
+    case 'asignado':
+    default:
+      return 'Asignado';
+  }
+}
+
+async function syncSolicitudFromAsignacion(asignacion: Partial<AsignacionVisita>, estado: string) {
+  const filters = [
+    asignacion.nombre_institucion ? `nombre_institucion.ilike.%${asignacion.nombre_institucion.trim()}%` : null,
+    asignacion.nombre_referente ? `nombre_referente.eq.${asignacion.nombre_referente}` : null,
+    asignacion.email_referente ? `email_referente.eq.${asignacion.email_referente}` : null,
+    asignacion.telefono_referente ? `telefono_referente.eq.${asignacion.telefono_referente}` : null,
+    asignacion.telefono_institucion ? `telefono_institucion.eq.${asignacion.telefono_institucion}` : null,
+  ].filter(Boolean);
+
+  if (filters.length === 0) return;
+
+  const { data: candidates, error: candidatesError } = await supabase
+    .from('solicitudes' as any)
+    .select('*')
+    .or(filters.join(','))
+    .limit(25);
+  if (candidatesError) throw candidatesError;
+
+  const matchingSolicitud = pickSolicitudCandidate((candidates || []) as SolicitudPendiente[], asignacion);
+  if (!matchingSolicitud) return;
+
+  const now = new Date().toISOString();
+  const payload: Record<string, any> = {
+    estado_actual: mapAsignacionEstadoToSolicitudEstado(estado),
+  };
+
+  if (estado === 'pendiente' || estado === 'cancelado') {
+    payload.marca_temporal = now;
+  }
+
+  const { error: updateError } = await supabase
+    .from('solicitudes' as any)
+    .update(payload as any)
+    .eq('id', matchingSolicitud.id);
+  if (updateError) throw updateError;
+}
+
 export function useDisponibilidad(anio?: number) {
   return useQuery({
     queryKey: ['disponibilidad-visitas', anio],
@@ -172,6 +327,13 @@ export function useActualizarEstado() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, estado, id_plani }: { id: number; estado: string; id_plani?: number | null }) => {
+      const { data: asignacionActual, error: fetchError } = await supabase
+        .from('asignaciones_visita' as any)
+        .select('*')
+        .eq('id_asignacion', id)
+        .single();
+      if (fetchError) throw fetchError;
+
       const payload: Record<string, any> = { estado };
       if (id_plani !== undefined) payload.id_plani = id_plani;
       const { error } = await supabase
@@ -179,10 +341,16 @@ export function useActualizarEstado() {
         .update(payload as any)
         .eq('id_asignacion', id);
       if (error) throw error;
+
+      await syncSolicitudFromAsignacion({
+        ...asignacionActual,
+        ...payload,
+      }, estado);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
       qc.invalidateQueries({ queryKey: ['disponibilidad-visitas'] });
+      qc.invalidateQueries({ queryKey: ['solicitudes-pendientes'] });
     },
   });
 }
