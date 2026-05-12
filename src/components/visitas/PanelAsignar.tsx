@@ -29,6 +29,118 @@ const ESTADO_PANEL_LABELS: Record<EstadoPanel, string> = {
   modificar: 'Modificar datos',
 };
 
+const SOLICITUD_MATCH_MIN_SCORE = 60;
+const SOLICITUD_MATCH_MIN_MARGIN = 10;
+
+const normalizeComparableText = (value?: string | null) =>
+  (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+const normalizeComparablePhone = (value?: string | null) =>
+  (value || '').replace(/\D/g, '');
+
+const buildSolicitudFromAsignacion = (asignacion: AsignacionVisita) => ({
+  marca_temporal: new Date().toISOString(),
+  estado_actual: 'pendiente',
+  nombre_institucion: asignacion.nombre_institucion?.trim() || 'Sin institución',
+  nombre_referente: asignacion.nombre_referente || null,
+  email_referente: asignacion.email_referente || null,
+  telefono_referente: asignacion.telefono_referente || null,
+  telefono_institucion: asignacion.telefono_institucion || null,
+  nombre_empresa_organizacion: asignacion.nombre_empresa || null,
+  rango_etario: asignacion.rango_etario || null,
+  cantidad_visitantes: asignacion.cantidad_personas_original,
+  comentarios_observaciones: asignacion.observaciones || null,
+  coeficiente_calculado: asignacion.coeficiente_aplicado,
+});
+
+function scoreSolicitudCandidate(candidate: SolicitudPendiente, asignacion: AsignacionVisita) {
+  let score = 0;
+
+  const institucionAsignacion = normalizeComparableText(asignacion.nombre_institucion);
+  const institucionSolicitud = normalizeComparableText(candidate.nombre_institucion);
+  if (institucionAsignacion && institucionSolicitud) {
+    if (institucionAsignacion === institucionSolicitud) score += 35;
+    else if (
+      institucionSolicitud.includes(institucionAsignacion) ||
+      institucionAsignacion.includes(institucionSolicitud)
+    ) score += 15;
+  }
+
+  const referenteAsignacion = normalizeComparableText(asignacion.nombre_referente);
+  const referenteSolicitud = normalizeComparableText(candidate.nombre_referente);
+  if (referenteAsignacion && referenteSolicitud) {
+    if (referenteAsignacion === referenteSolicitud) score += 25;
+    else if (
+      referenteSolicitud.includes(referenteAsignacion) ||
+      referenteAsignacion.includes(referenteSolicitud)
+    ) score += 10;
+  }
+
+  const emailAsignacion = normalizeComparableText(asignacion.email_referente);
+  const emailSolicitud = normalizeComparableText(candidate.email_referente);
+  if (emailAsignacion && emailSolicitud && emailAsignacion === emailSolicitud) {
+    score += 35;
+  }
+
+  const telReferenteAsignacion = normalizeComparablePhone(asignacion.telefono_referente);
+  const telReferenteSolicitud = normalizeComparablePhone(candidate.telefono_referente);
+  if (telReferenteAsignacion && telReferenteSolicitud && telReferenteAsignacion === telReferenteSolicitud) {
+    score += 30;
+  }
+
+  const telInstitucionAsignacion = normalizeComparablePhone(asignacion.telefono_institucion);
+  const telInstitucionSolicitud = normalizeComparablePhone(candidate.telefono_institucion);
+  if (telInstitucionAsignacion && telInstitucionSolicitud && telInstitucionAsignacion === telInstitucionSolicitud) {
+    score += 20;
+  }
+
+  const empresaAsignacion = normalizeComparableText(asignacion.nombre_empresa);
+  const empresaSolicitud = normalizeComparableText(candidate.nombre_empresa_organizacion);
+  if (empresaAsignacion && empresaSolicitud && empresaAsignacion === empresaSolicitud) {
+    score += 10;
+  }
+
+  const rangoAsignacion = normalizeComparableText(asignacion.rango_etario);
+  const rangoSolicitud = normalizeComparableText(candidate.rango_etario);
+  if (rangoAsignacion && rangoSolicitud && rangoAsignacion === rangoSolicitud) {
+    score += 10;
+  }
+
+  if (
+    typeof candidate.cantidad_visitantes === 'number' &&
+    candidate.cantidad_visitantes === asignacion.cantidad_personas_original
+  ) {
+    score += 15;
+  }
+
+  if (normalizeComparableText(candidate.estado_actual) !== 'pendiente') {
+    score += 5;
+  }
+
+  return score;
+}
+
+function pickSolicitudCandidate(candidates: SolicitudPendiente[], asignacion: AsignacionVisita) {
+  const ranked = candidates
+    .map((candidate) => ({
+      candidate,
+      score: scoreSolicitudCandidate(candidate, asignacion),
+      timestamp: new Date(candidate.marca_temporal || candidate.created_at || 0).getTime(),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || b.timestamp - a.timestamp);
+
+  const best = ranked[0];
+  const second = ranked[1];
+  if (!best || best.score < SOLICITUD_MATCH_MIN_SCORE) return null;
+  if (second && best.score - second.score < SOLICITUD_MATCH_MIN_MARGIN) return null;
+  return best.candidate;
+}
+
 export function PanelAsignar({ estadosFiltrados = [] }: Props) {
   const { data: asignaciones = [], isLoading: loadingAsig } = useAsignaciones();
   const { data: slots = [] } = useDisponibilidad(new Date().getFullYear());
@@ -404,47 +516,34 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
                    setSaving(true);
                    try {
                      // 1. Buscamos si la solicitud original aún existe usando comodines (por si hay espacios extra ocultos)
-                     const institucion = asignacionViewing.nombre_institucion || 'Sin institución';
-                     const { data: existing, error: errExist } = await supabase
-                       .from('solicitudes' as any)
-                       .select('id')
-                       .ilike('nombre_institucion', `%${institucion.trim()}%`)
-                       .limit(1)
-                       .maybeSingle();
+                     const institucion = asignacionViewing.nombre_institucion?.trim() || '';
+                     const pendingSolicitud = buildSolicitudFromAsignacion(asignacionViewing);
+                     let matchingSolicitud: SolicitudPendiente | null = null;
+                     if (institucion) {
+                       const { data: candidates, error: candidatesError } = await supabase
+                         .from('solicitudes' as any)
+                         .select('*')
+                         .ilike('nombre_institucion', `%${institucion}%`)
+                         .limit(25);
+                       if (candidatesError) throw candidatesError;
 
-                     if (existing) {
-                       // Si la encontramos, simplemente actualizamos su estado a pendiente
+                       matchingSolicitud = pickSolicitudCandidate(
+                         (candidates || []) as SolicitudPendiente[],
+                         asignacionViewing,
+                       );
+                     }
+
+                     if (matchingSolicitud) {
                        const { error: errUpdate } = await supabase
                          .from('solicitudes' as any)
-                         .update({ estado_actual: 'pendiente', marca_temporal: new Date().toISOString() })
-                         .eq('id', existing.id);
+                         .update(pendingSolicitud as any)
+                         .eq('id', matchingSolicitud.id);
                        if (errUpdate) throw errUpdate;
                      } else {
-                       // Si no existe (fue borrada), la re-creamos
-                       const newSol = {
-                         marca_temporal: new Date().toISOString(),
-                         estado_actual: 'pendiente',
-                         nombre_institucion: institucion.trim(),
-                         nombre_referente: asignacionViewing.nombre_referente,
-                         email_referente: asignacionViewing.email_referente,
-                         telefono_referente: asignacionViewing.telefono_referente,
-                         telefono_institucion: asignacionViewing.telefono_institucion,
-                         nombre_empresa_organizacion: asignacionViewing.nombre_empresa,
-                         rango_etario: asignacionViewing.rango_etario,
-                         cantidad_visitantes: asignacionViewing.cantidad_personas_original,
-                         comentarios_observaciones: asignacionViewing.observaciones,
-                         coeficiente_calculado: asignacionViewing.coeficiente_aplicado,
-                       };
-                       
-                       const { error: errInsert } = await supabase.from('solicitudes' as any).insert([newSol as any]);
-                       
-                       if (errInsert) {
-                         // Si es 23505 significa que el nombre exácto ya existe pese al ilike pero con algún caracter raro.
-                         // Lo consideramos insertado de forma forzada ignorando el error.
-                         if (errInsert.code !== '23505') {
-                            throw errInsert;
-                         }
-                       }
+                       const { error: errInsert } = await supabase
+                         .from('solicitudes' as any)
+                         .insert([pendingSolicitud as any]);
+                       if (errInsert) throw errInsert;
                      }
                      
                      // 2. Eliminar la asignación porque ya no es más una asignación confirmada o en_espera
