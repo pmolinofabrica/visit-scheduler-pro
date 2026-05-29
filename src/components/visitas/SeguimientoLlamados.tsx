@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-const AGENTES = ['Pablo', 'Vanesa', 'Celina', 'Eugenia', 'Eliana'];
+const AGENTES = ['pablo', 'vane', 'celi', 'euge', 'eli'];
 
 interface Props {
   idAsignacion?: number | null;

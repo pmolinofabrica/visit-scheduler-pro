@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Phone, PhoneOff, Clock, X, MessageSquare, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const AGENTES = ['Eliana', 'Eugenia', 'Pablo', 'Celina', 'Vanesa'];
+const AGENTES = ['eli', 'euge', 'celi', 'vane', 'pablo'];
 
 interface Props {
   idAsignacion: number;
