@@ -397,6 +397,23 @@ export function useCrearSeguimientoLlamado() {
   });
 }
 
+export function useEliminarSeguimientoLlamado() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id_llamado: number) => {
+      const { error } = await supabase
+        .from('seguimiento_llamados_visita' as any)
+        .delete()
+        .eq('id_llamado', id_llamado);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['seguimiento-llamados'] });
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+    },
+  });
+}
+
 export interface PlantillaCorreo {
   tipo_correo: string;
   asunto: string;
