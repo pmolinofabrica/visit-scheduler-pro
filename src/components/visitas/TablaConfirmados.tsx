@@ -1,22 +1,42 @@
 import { useMemo, useState } from 'react';
-import { useAsignaciones, useDisponibilidad } from '@/hooks/useVisitas';
+import { useAsignaciones, useDisponibilidad, useSeguimientoLlamados } from '@/hooks/useVisitas';
 import { DIA_SEMANA, MES_NOMBRE } from '@/lib/types-visitas';
 import type { AsignacionVisita } from '@/lib/types-visitas';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Calendar, Users, Building, Phone, Mail, Sun, Moon, Pencil, Trash2, Copy } from 'lucide-react';
+import { Calendar, Users, Building, Phone, PhoneOff, Mail, Sun, Moon, Pencil, Trash2, Copy, ChevronDown } from 'lucide-react';
 import { isToday, isTomorrow, isPast } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FormModificacion } from './FormModificacion';
+import { PanelLlamado } from './PanelLlamado';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+
+function LlamadoIndicator({ idAsignacion }: { idAsignacion: number }) {
+  const { data: llamados = [] } = useSeguimientoLlamados(idAsignacion);
+  if (llamados.length === 0) return null;
+  const lastCall = llamados[llamados.length - 1];
+  return (
+    <span className={cn(
+      'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-sm',
+      lastCall.atendio
+        ? 'text-semaforo-verde bg-semaforo-verde/10'
+        : 'text-semaforo-rojo bg-semaforo-rojo/10'
+    )}>
+      {lastCall.atendio ? <Phone className="h-2.5 w-2.5" /> : <PhoneOff className="h-2.5 w-2.5" />}
+      {lastCall.atendio ? 'Atendió' : 'No atendió'}
+    </span>
+  );
+}
 
 export function TablaConfirmados() {
   const qc = useQueryClient();
   const [editingAsignacion, setEditingAsignacion] = useState<AsignacionVisita | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [callingId, setCallingId] = useState<number | null>(null);
 
   const { data: asignaciones = [], isLoading } = useAsignaciones();
   const { data: slots = [] } = useDisponibilidad(new Date().getFullYear());
@@ -125,6 +145,20 @@ export function TablaConfirmados() {
     }
   };
 
+  const handleCambiarEstado = async (idAsig: number, nuevoEstado: string) => {
+    try {
+      const { error } = await supabase
+        .from('asignaciones_visita' as any)
+        .update({ estado: nuevoEstado, updated_at: new Date().toISOString() } as any)
+        .eq('id_asignacion', idAsig);
+      if (error) throw error;
+      toast.success(`Estado cambiado a ${nuevoEstado === 'confirmado' ? 'Confirmado' : 'Asignado'}`);
+      qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Error al cambiar estado');
+    }
+  };
+
   if (grouped.size === 0) {
     return <p className="py-8 text-center text-muted-foreground">No hay turnos confirmados o asignados</p>;
   }
@@ -217,9 +251,31 @@ export function TablaConfirmados() {
                             <div className="flex items-center gap-2">
                               <Building className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                               <span className="font-semibold truncate">{a.nombre_institucion || '—'}</span>
-                              <Badge className={cn('text-[10px] shrink-0', a.estado === 'confirmado' ? 'bg-badge-confirmed text-primary-foreground' : 'bg-badge-assigned text-primary-foreground')}>
-                                {a.estado === 'confirmado' ? '✔ Confirmado' : '📋 Asignado'}
-                              </Badge>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className={cn(
+                                    'text-[10px] shrink-0 inline-flex items-center gap-1 cursor-pointer rounded-sm px-1.5 py-0.5 font-medium transition-colors hover:opacity-80',
+                                    a.estado === 'confirmado' ? 'bg-badge-confirmed text-primary-foreground' : 'bg-badge-assigned text-primary-foreground'
+                                  )}>
+                                    {a.estado === 'confirmado' ? '✔ Confirmado' : '📋 Asignado'}
+                                    <ChevronDown className="h-2.5 w-2.5" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="min-w-[140px]">
+                                  <DropdownMenuItem
+                                    onClick={() => handleCambiarEstado(a.id_asignacion, 'asignado')}
+                                    className={cn('text-xs', a.estado === 'asignado' && 'font-bold bg-muted')}
+                                  >
+                                    📋 Asignado
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleCambiarEstado(a.id_asignacion, 'confirmado')}
+                                    className={cn('text-xs', a.estado === 'confirmado' && 'font-bold bg-muted')}
+                                  >
+                                    ✔ Confirmado
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                             <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
@@ -239,8 +295,20 @@ export function TablaConfirmados() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
-                            <span className="text-[10px] font-mono text-muted-foreground">#{a.id_asignacion}</span>
+                            <div className="flex items-center gap-2">
+                              <LlamadoIndicator idAsignacion={a.id_asignacion} />
+                              <span className="text-[10px] font-mono text-muted-foreground">#{a.id_asignacion}</span>
+                            </div>
                             <div className="flex items-center gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 text-muted-foreground hover:text-semaforo-verde hover:bg-semaforo-verde/10"
+                                onClick={() => setCallingId(a.id_asignacion)}
+                                title="Registrar llamado"
+                              >
+                                <Phone className="h-3 w-3" />
+                              </Button>
                               <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => setEditingAsignacion(a)}>
                                 <Pencil className="h-3 w-3" />
                               </Button>
@@ -276,6 +344,14 @@ export function TablaConfirmados() {
           )}
         </DialogContent>
       </Dialog>
+
+      {callingId && (
+        <PanelLlamado
+          idAsignacion={callingId}
+          nombreInstitucion={confirmadas.find(a => a.id_asignacion === callingId)?.nombre_institucion}
+          onClose={() => setCallingId(null)}
+        />
+      )}
     </div>
   );
 }
