@@ -47,10 +47,10 @@ export function TablaConfirmados() {
     return m;
   }, [slots]);
 
-  // Only confirmed + assigned with a slot
+  // Only confirmed + assigned + cancelled with a slot
   const confirmadas = useMemo(() => {
     return asignaciones
-      .filter(a => (a.estado === 'confirmado' || a.estado === 'asignado') && a.id_plani)
+      .filter(a => (a.estado === 'confirmado' || a.estado === 'asignado' || a.estado === 'cancelado') && a.id_plani)
       .sort((a, b) => {
         const sa = a.id_plani ? slotMap[a.id_plani] : null;
         const sb = b.id_plani ? slotMap[b.id_plani] : null;
@@ -118,7 +118,7 @@ export function TablaConfirmados() {
   };
 
   const handleEliminar = async (idAsig: number) => {
-    if (!confirm('¿Estás seguro de que querés ELIMINAR definitivamente este turno? Esta acción no se puede deshacer.')) return;
+    if (!confirm('¿Estás seguro de que querés eliminar definitivamente este turno? Esta acción no se puede deshacer.')) return;
     try {
       const { error } = await supabase
         .from('asignaciones_visita' as any)
@@ -152,7 +152,7 @@ export function TablaConfirmados() {
         .update({ estado: nuevoEstado, updated_at: new Date().toISOString() } as any)
         .eq('id_asignacion', idAsig);
       if (error) throw error;
-      toast.success(`Estado cambiado a ${nuevoEstado === 'confirmado' ? 'Confirmado' : 'Asignado'}`);
+      toast.success(`Estado cambiado a ${nuevoEstado === 'confirmado' ? 'Confirmado' : nuevoEstado === 'cancelado' ? 'Cancelado' : 'Asignado'}`);
       qc.invalidateQueries({ queryKey: ['asignaciones-visita'] });
     } catch (e: any) {
       toast.error(e.message || 'Error al cambiar estado');
@@ -160,7 +160,7 @@ export function TablaConfirmados() {
   };
 
   if (grouped.size === 0) {
-    return <p className="py-8 text-center text-muted-foreground">No hay turnos confirmados o asignados</p>;
+    return <p className="py-8 text-center text-muted-foreground">No hay turnos confirmados, asignados o cancelados</p>;
   }
 
   return (
@@ -244,6 +244,8 @@ export function TablaConfirmados() {
                             'flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm',
                             a.estado === 'confirmado' 
                               ? 'bg-semaforo-verde/5 border-semaforo-verde/30' 
+                              : a.estado === 'cancelado'
+                              ? 'bg-semaforo-rojo/5 border-semaforo-rojo/30'
                               : 'bg-card border-border/50'
                           )}
                         >
@@ -255,9 +257,9 @@ export function TablaConfirmados() {
                                 <DropdownMenuTrigger asChild>
                                   <button className={cn(
                                     'text-[10px] shrink-0 inline-flex items-center gap-1 cursor-pointer rounded-sm px-1.5 py-0.5 font-medium transition-colors hover:opacity-80',
-                                    a.estado === 'confirmado' ? 'bg-badge-confirmed text-primary-foreground' : 'bg-badge-assigned text-primary-foreground'
+                                    a.estado === 'confirmado' ? 'bg-badge-confirmed text-primary-foreground' : a.estado === 'cancelado' ? 'bg-badge-cancelled text-primary-foreground' : 'bg-badge-assigned text-primary-foreground'
                                   )}>
-                                    {a.estado === 'confirmado' ? '✔ Confirmado' : '📋 Asignado'}
+                                    {a.estado === 'confirmado' ? '✔ Confirmado' : a.estado === 'cancelado' ? '❌ Cancelado' : '📋 Asignado'}
                                     <ChevronDown className="h-2.5 w-2.5" />
                                   </button>
                                 </DropdownMenuTrigger>
@@ -273,6 +275,12 @@ export function TablaConfirmados() {
                                     className={cn('text-xs', a.estado === 'confirmado' && 'font-bold bg-muted')}
                                   >
                                     ✔ Confirmado
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleCambiarEstado(a.id_asignacion, 'cancelado')}
+                                    className={cn('text-xs', a.estado === 'cancelado' && 'font-bold bg-muted')}
+                                  >
+                                    ❌ Cancelado
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>

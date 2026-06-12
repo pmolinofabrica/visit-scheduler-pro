@@ -221,7 +221,7 @@ export function CalendarioAnual({ slots, asignaciones = [], mesSolicitado, selec
                                 asignado: 'border-l-badge-assigned bg-badge-assigned/10',
                                 confirmado: 'border-l-badge-confirmed bg-badge-confirmed/10',
                                 en_espera: 'border-l-badge-waiting bg-badge-waiting/10',
-                                cancelado: 'border-l-badge-cancelled bg-badge-cancelled/10 opacity-60',
+                                cancelado: 'border-l-badge-cancelled bg-badge-cancelled/10 line-through decoration-badge-cancelled/50',
                               };
                               const style = estadoStyles[a.estado] || '';
                               return (

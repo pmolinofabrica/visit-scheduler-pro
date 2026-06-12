@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
 export default function PanelVisitas() {
-  const [estadosFiltrados, setEstadosFiltrados] = useState<string[]>(['pendiente', 'asignado', 'en_espera', 'confirmado']);
+  const [estadosFiltrados, setEstadosFiltrados] = useState<string[]>(['pendiente', 'asignado', 'en_espera', 'confirmado', 'cancelado']);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -76,7 +76,7 @@ export default function PanelVisitas() {
 
           <TabsContent value="confirmados" className="animate-fade-up">
             <div className="rounded-xl border bg-card shadow-soft p-5">
-              <h2 className="mb-5 text-lg font-bold tracking-tight">Turnos asignados y confirmados</h2>
+              <h2 className="mb-5 text-lg font-bold tracking-tight">Turnos asignados, confirmados y cancelados</h2>
               <TablaConfirmados />
             </div>
           </TabsContent>
