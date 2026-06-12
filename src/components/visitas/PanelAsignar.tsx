@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Users, Send, Pencil, Copy, Trash2, ArrowDownAZ } from 'lucide-react';
+import { CalendarDays, Users, Send, Pencil, Copy, Trash2, ArrowDownAZ, Building } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { DetalleAsignacion } from './DetalleAsignacion';
 import { FormModificacion } from './FormModificacion';
 import type { SolicitudPendiente } from '@/lib/types-visitas';
@@ -494,6 +495,53 @@ export function PanelAsignar({ estadosFiltrados = [] }: Props) {
             <Send className="h-5 w-5 text-primary" />
             {viewingAsignacionId ? 'Detalle de Asignación' : 'Panel de Acción'}
           </h2>
+
+          {/* Groups in this slot (visible whenever a slot is selected) */}
+          {slotSeleccionado && (() => {
+            const grupos = asignaciones.filter(a => a.id_plani === selectedPlani && a.estado !== 'pendiente' && a.estado !== 'duplicado');
+            if (grupos.length === 0) return null;
+            return (
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Grupos en este turno ({grupos.length})
+                </Label>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {grupos.map(a => (
+                    <button
+                      key={a.id_asignacion}
+                      onClick={() => handleSelectAsignacionFromCalendar(a.id_asignacion)}
+                      className={cn(
+                        'w-full text-left rounded border border-border/50 border-l-[3px] px-2.5 py-2 text-xs hover:brightness-95 transition-all',
+                        a.estado === 'confirmado' && 'border-l-badge-confirmed bg-badge-confirmed/5',
+                        a.estado === 'asignado' && 'border-l-badge-assigned bg-badge-assigned/5',
+                        a.estado === 'en_espera' && 'border-l-badge-waiting bg-badge-waiting/5',
+                        a.estado === 'cancelado' && 'border-l-badge-cancelled bg-badge-cancelled/5 line-through decoration-badge-cancelled/30',
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Building className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <span className="font-medium truncate flex-1">{a.nombre_institucion || '—'}</span>
+                        <span className={cn(
+                          'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0',
+                          a.estado === 'confirmado' && 'bg-badge-confirmed text-primary-foreground',
+                          a.estado === 'asignado' && 'bg-badge-assigned text-primary-foreground',
+                          a.estado === 'en_espera' && 'bg-badge-waiting text-primary-foreground',
+                          a.estado === 'cancelado' && 'bg-badge-cancelled text-primary-foreground',
+                        )}>
+                          {ESTADO_LABELS[a.estado]}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 text-muted-foreground">
+                        <span>{a.cantidad_personas_original}p</span>
+                        <span className="font-mono font-bold text-primary">{Math.round(a.cupo_calculado)}c</span>
+                        {a.rango_etario && <span className="truncate">{a.rango_etario}</span>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Viewing an existing assignment from calendar */}
           {asignacionViewing ? (
