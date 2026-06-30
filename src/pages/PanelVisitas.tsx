@@ -3,7 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PanelAsignar } from '@/components/visitas/PanelAsignar';
 import { TablaSeguimiento } from '@/components/visitas/TablaSeguimiento';
 import { TablaConfirmados } from '@/components/visitas/TablaConfirmados';
-import { CalendarDays, ClipboardList, CheckCircle, LogOut } from 'lucide-react';
+import { FormCrearSolicitud } from '@/components/visitas/FormCrearSolicitud';
+import { CalendarDays, ClipboardList, CheckCircle, Plus, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -48,7 +49,7 @@ export default function PanelVisitas() {
 
       <main className="container py-6">
         <Tabs defaultValue="asignar" className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-3 h-11 bg-muted/60 p-1">
+          <TabsList className="grid w-full max-w-xl grid-cols-4 h-11 bg-muted/60 p-1">
             <TabsTrigger value="asignar" className="flex items-center gap-1.5 font-semibold data-[state=active]:shadow-soft text-[13px]">
               <CalendarDays className="h-4 w-4" />
               Asignar
@@ -60,6 +61,10 @@ export default function PanelVisitas() {
             <TabsTrigger value="confirmados" className="flex items-center gap-1.5 font-semibold data-[state=active]:shadow-soft text-[13px]">
               <CheckCircle className="h-4 w-4" />
               Confirmados
+            </TabsTrigger>
+            <TabsTrigger value="nueva" className="flex items-center gap-1.5 font-semibold data-[state=active]:shadow-soft text-[13px]">
+              <Plus className="h-4 w-4" />
+              Nueva
             </TabsTrigger>
           </TabsList>
 
@@ -78,6 +83,12 @@ export default function PanelVisitas() {
             <div className="rounded-xl border bg-card shadow-soft p-5">
               <h2 className="mb-5 text-lg font-bold tracking-tight">Turnos asignados, confirmados y cancelados</h2>
               <TablaConfirmados />
+            </div>
+          </TabsContent>
+          <TabsContent value="nueva" className="animate-fade-up">
+            <div className="rounded-xl border bg-card shadow-soft p-5 max-w-2xl">
+              <h2 className="mb-5 text-lg font-bold tracking-tight">Nueva solicitud de visita</h2>
+              <FormCrearSolicitud />
             </div>
           </TabsContent>
         </Tabs>

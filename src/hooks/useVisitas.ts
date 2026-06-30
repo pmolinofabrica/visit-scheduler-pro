@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { SlotDisponibilidad, AsignacionVisita, Coeficiente, SeguimientoLlamado, SolicitudPendiente } from '@/lib/types-visitas';
 
 const SOLICITUDES_ACTIVE_FROM = import.meta.env.VITE_SOLICITUDES_ACTIVE_FROM
@@ -429,6 +430,30 @@ export function usePlantillasCorreo() {
         .select('*');
       if (error) throw error;
       return (data || []) as PlantillaCorreo[];
+    },
+  });
+}
+
+export function useCrearSolicitud() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (solicitud: Record<string, any>) => {
+      const payload = {
+        ...solicitud,
+        marca_temporal: new Date().toISOString(),
+        estado_actual: 'Pendiente',
+      };
+      const { data, error } = await supabase
+        .from('solicitudes' as any)
+        .insert(payload as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['solicitudes-pendientes'] });
+      toast.success('Solicitud creada correctamente');
     },
   });
 }
